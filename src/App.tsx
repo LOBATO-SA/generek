@@ -1,26 +1,43 @@
 import './App.css'
 import Button from './components/Button'
 import PlantAnimation from './components/PlantAnimation'
+import MusicToggleButton from './components/MusicToggleButton'
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 function App() {
+  const navigate = useNavigate()
   const audioRef = useRef<HTMLAudioElement>(null)
   const [started, setStarted] = useState(false)
   const [showContent, setShowContent] = useState(false)
   const [showHeader, setShowHeader] = useState(false)
   const [showPlants, setShowPlants] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
 
   const handleStart = async () => {
     if (audioRef.current) {
       try {
         await audioRef.current.play()
         setStarted(true)
+        setIsPlaying(true)
         startAnimationSequence()
       } catch (error) {
         console.log('Erro ao reproduzir áudio:', error)
         // Iniciar animações mesmo se o áudio falhar
         setStarted(true)
         startAnimationSequence()
+      }
+    }
+  }
+
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+        setIsPlaying(false)
+      } else {
+        audioRef.current.play()
+        setIsPlaying(true)
       }
     }
   }
@@ -70,6 +87,7 @@ function App() {
                 </span>
               </Button>
             </div>
+            
           </div>
         </div>
       )}
@@ -95,8 +113,14 @@ function App() {
             Simplifique a contratação e transforme seus eventos em experiências inesquecíveis.
           </p>
           <div className="hero-buttons">
-            <Button>Começar Agora</Button>
+            <Button onClick={() => navigate('/auth')}>Começar Agora</Button>
           </div>
+          {/* Music Control Button */}
+            {started && (
+              <div className="music-control-start">
+                <MusicToggleButton isPlaying={isPlaying} onToggle={toggleMusic} size={30} />
+              </div>
+            )}
         </div>
         
         {/* Plant Animations */}
