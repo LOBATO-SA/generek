@@ -1,21 +1,20 @@
 @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@200;300;400;500;600;700;800;900;1000&family=Roboto:wght@300;400;500;700&display=swap");
 
 .home-page {
-    font-family: "Nunito", sans-serif;
-    display: flex;
-    align-items: flex-start;
-    min-height: 100vh;
-    background-image: url('/images/bghome.jpg');
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-attachment: fixed;
-    padding: 0px;
-    flex-wrap: nowrap;
-    justify-content: space-between;
+  font-family: "Nunito", sans-serif;
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+  background-image: url(https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/aa462558-0106-4268-9864-d34a4f35531f);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
 }
 
 .home-page h1 {
-  font-size: clamp(1rem, 3vw, 1.2rem);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  color: #fff;
+  margin-bottom: 20px;
 }
 
 /* MAIN MENU */
@@ -29,23 +28,24 @@
   background: rgba(16, 21, 61, 0.5);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  min-height: 100vh;
-  position: sticky;
+  height: 100vh;
+  position: fixed;
   top: 0;
+  left: 0;
+  width: 80px;
+  z-index: 100;
 }
 
 .user-info img {
-  padding: 12px 24px 6px;
+  padding: 12px;
   border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
 }
 
 .user-info p {
-  color: #fff;
-  font-size: clamp(0.8rem, 3vw, 1rem);
-  font-weight: 500;
-  text-align: center;
-  line-height: 1;
-  padding: 0 6px 32px;
+  display: none;
 }
 
 .nav-item {
@@ -59,9 +59,9 @@
   justify-content: center;
   color: #fff;
   font-size: 1rem;
-  padding: 12px 0;
-  margin: 0 8px;
-  border-radius: 5px;
+  padding: 12px;
+  margin: 4px 8px;
+  border-radius: 8px;
   text-decoration: none;
 }
 
@@ -70,57 +70,44 @@
 }
 
 .nav-icon {
-  width: 40px;
-  height: 20px;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
 }
 
 .nav-text {
-  display: block;
-  width: 70px;
-  height: 20px;
+  display: none;
 }
 
 /* CONTENT */
 .home-page .content {
-  display: grid;
-  grid-template-columns: 72% 28%;
   width: 100%;
-  background: rgba(16, 21, 61, 0.5);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 15px;
-  box-shadow: 0 0.5px 0 1px rgba(255, 255, 255, 0.23) inset,
-    0 1px 0 0 rgba(255, 255, 255, 0.6) inset, 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-/* LEFT CONTENT */
-.left-content {
-  padding: 20px 15px;
+  padding: 40px;
+  padding-bottom: 200px;
   color: #e5e5e5;
+  overflow-y: auto;
+  max-height: 100vh;
+  margin-left: 80px;
 }
 
 /* SLIDER */
 .slider-container {
   margin: 0 auto;
   width: 100%;
+  max-width: 1200px;
 }
 
 .mySwiper {
   width: 100%;
-  padding: 12px 0 16px;
-  margin-bottom: 30px;
+  padding: 20px 0 30px;
 }
 
 .mySwiper .swiper-slide {
   position: relative;
-  width: 450px;
+  width: 500px;
 }
 
 .mySwiper .swiper-slide img {
-  border-radius: 16px;
-  height: 220px;
+  border-radius: 20px;
+  height: 300px;
   object-fit: cover;
   border: 2px solid rgba(159, 160, 168, 0.5);
   width: 100%;
@@ -150,12 +137,12 @@
   width: 100%;
   height: 98%;
   background: linear-gradient(240deg, transparent, transparent, rgba(38, 21, 149, 0.8));
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 20px;
+  padding: 30px;
 }
 
 .slide-overlay h2 {
-  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
   font-weight: 700;
   color: #fff;
 }
@@ -164,15 +151,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  column-gap: 8px;
+  column-gap: 10px;
   width: max-content;
-  padding: 8px 12px;
+  padding: 14px 20px;
   background: #e9e6eb2a;
   color: #e8e5e5;
   border: 1px solid rgba(159, 160, 168, 0.4);
-  border-radius: 10px;
+  border-radius: 12px;
   outline: 0;
-  font-size: clamp(0.65rem, 3vw, 0.85rem);
+  font-size: clamp(0.8rem, 3vw, 1.1rem);
   font-weight: 500;
   text-transform: uppercase;
   box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px, rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
@@ -185,14 +172,91 @@
   color: #000;
 }
 
-/* Containers */
-.containers {
+/* SONGS SECTION */
+.songs-section {
+  margin: 60px 0 40px;
+  max-width: 1200px;
+}
+
+.songs-section h1 {
+  margin-bottom: 30px;
+}
+
+.songs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 30px;
+}
+
+.song-card {
+  background: rgba(16, 21, 61, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.song-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(169, 150, 253, 0.6);
+  box-shadow: 0 10px 30px rgba(169, 150, 253, 0.3);
+}
+
+.song-card-image {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+.song-card-image img {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.play-overlay {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
-  padding: 0 0 12px;
-  overflow-x: auto;
-  cursor: grab;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
+
+.song-card:hover .play-overlay {
+  opacity: 1;
+}
+
+.play-overlay i {
+  font-size: 3rem;
+  color: #fff;
+}
+
+.song-card-info h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #fff;
+}
+
+.song-card-info p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 5px;
+}
+
+.song-card-info span {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+
 
 /* ARTISTS */
 .artists h1 {
