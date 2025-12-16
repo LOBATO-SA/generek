@@ -143,7 +143,15 @@ function HomePage() {
               <div key={index} className="song-card">
                 <div className="song-card-image">
                   <img src={song.cover} alt={song.title} />
-                  <div className="play-overlay">
+                  <div 
+                    className="play-overlay"
+                    onClick={() => {
+                      setCurrentSongIndex(index)
+                      setIsPlaying(true)
+                      setTimeout(() => audioRef.current?.play(), 100)
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <i className="fa-solid fa-play"></i>
                   </div>
                 </div>
