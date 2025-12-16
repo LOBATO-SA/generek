@@ -17,66 +17,6 @@
   margin-bottom: 20px;
 }
 
-/* MAIN MENU */
-.home-page .main-menu {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border-radius: 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.5);
-  padding: 12px 0 20px;
-  background: rgba(16, 21, 61, 0.5);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 80px;
-  z-index: 100;
-}
-
-.user-info img {
-  padding: 12px;
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-}
-
-.user-info p {
-  display: none;
-}
-
-.nav-item {
-  display: block;
-  list-style: none;
-}
-
-.nav-item a {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 1rem;
-  padding: 12px;
-  margin: 4px 8px;
-  border-radius: 8px;
-  text-decoration: none;
-}
-
-.nav-item.active a {
-  background: rgba(106, 109, 155, 0.5);
-}
-
-.nav-icon {
-  font-size: 1.3rem;
-}
-
-.nav-text {
-  display: none;
-}
-
 /* CONTENT */
 .home-page .content {
   width: 100%;
@@ -609,9 +549,11 @@
   }
 }
 
-@media (max-width: 750px) {
+@media (max-width: 768px) {
   .home-page .content {
     grid-template-columns: 100%;
+    margin-left: 0;
+    padding: 80px 20px 200px;
   }
 
   .right-content {
@@ -629,5 +571,28 @@
 
   .album-frame {
     width: 140px;
+  }
+
+  .songs-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-page .content {
+    padding: 80px 15px 200px;
+  }
+
+  .mySwiper .swiper-slide {
+    width: 320px;
+  }
+
+  .mySwiper .swiper-slide img {
+    height: 220px;
+  }
+
+  .songs-grid {
+    grid-template-columns: 1fr;
   }
 }

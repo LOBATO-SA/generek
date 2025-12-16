@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { EffectCoverflow, Pagination } from 'swiper/modules'
 import MusicPlayer from './components/MusicPlayer'
+import Sidebar from './components/Sidebar'
 import 'swiper/css'
 import 'swiper/css/effect-coverflow'
 import 'swiper/css/pagination'
@@ -101,35 +102,7 @@ function HomePage() {
     <div className="home-page">
       <audio ref={audioRef} src={songs[currentSongIndex].source} />
       
-      <aside className="main-menu">
-        <div>
-          <div className="user-info">
-            <img src="https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/37e5ccfa-f9ee-458b-afa2-dcd85b495e4e" alt="user" />
-            <p>Jane Wilson</p>
-          </div>
-          <ul>
-            {['discover', 'trending', 'album', 'playlist', 'favorites'].map((item) => (
-              <li key={item} className={`nav-item ${activeNav === item ? 'active' : ''}`} onClick={() => setActiveNav(item)}>
-                <a href="#">
-                  <i className={`fa fa-${item === 'discover' ? 'map' : item === 'trending' ? 'arrow-trend-up' : item === 'album' ? 'compact-disc' : item === 'playlist' ? 'circle-play' : 'heart'} nav-icon`}></i>
-                  <span className="nav-text">{item.charAt(0).toUpperCase() + item.slice(1)}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-        
-        <ul>
-          {['profile', 'settings', 'logout'].map((item) => (
-            <li key={item} className="nav-item">
-              <a href="#">
-                <i className={`fa fa-${item === 'profile' ? 'user' : item === 'settings' ? 'gear' : 'right-from-bracket'} nav-icon`}></i>
-                <span className="nav-text">{item.charAt(0).toUpperCase() + item.slice(1)}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </aside>
+      <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
 
       <main className="content">
         <div className="slider-container">
