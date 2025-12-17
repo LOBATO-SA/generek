@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar'
 import 'swiper/css'
 import 'swiper/css/effect-coverflow'
 import 'swiper/css/pagination'
+import { Heart } from 'lucide-react'
 
 function HomePage() {
   const [activeNav, setActiveNav] = useState('discover')
@@ -14,6 +15,15 @@ function HomePage() {
   const [currentSongIndex, setCurrentSongIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const STORAGE_KEY = 'likedSongs'
+
+  type Song = {
+    title: string
+    artist: string
+    duration: string
+    cover: string
+    source: string
+  }
 
   const playlists = [
     { name: "Midnight Moods", image: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/95b52c32-f5da-4fe6-956d-a5ed118bbdd2" },
@@ -23,7 +33,7 @@ function HomePage() {
     { name: "Uplifting Rhythms", image: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/df461a99-2fb3-4d55-ac16-2e0c6dd783e1" }
   ]
 
-  const songs = [
+  const songs: Song[] = [
     {
       title: "Redemption",
       artist: "Besomorph & Coopex",
@@ -46,6 +56,34 @@ function HomePage() {
       source: "https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/Unknown-BrainxRival-Control.mp3"
     }
   ]
+
+  const [likedSongs, setLikedSongs] = useState<Song[]>([])
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      setLikedSongs(saved ? JSON.parse(saved) : [])
+    } catch {
+      setLikedSongs([])
+    }
+  }, [])
+
+  const saveFavorites = (list: Song[]) => {
+    setLikedSongs(list)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+  }
+
+  const isLiked = (song: Song) => likedSongs.some(s => s.source === song.source)
+
+  const toggleLike = (song: Song) => {
+    if (isLiked(song)) {
+      const updated = likedSongs.filter(s => s.source !== song.source)
+      saveFavorites(updated)
+    } else {
+      const updated = [...likedSongs, song]
+      saveFavorites(updated)
+    }
+  }
 
   useEffect(() => {
     const audio = audioRef.current
@@ -156,27 +194,48 @@ function HomePage() {
                   </div>
                 </div>
                 <div className="song-card-info">
-                  <h3>{song.title}</h3>
-                  <p>{song.artist}</p>
-                  <span>{song.duration}</span>
+                  <div className="song-card-info-row">
+                    <div className="song-meta">
+                      <h3>{song.title}</h3>
+                      <p>{song.artist}</p>
+                      <span>{song.duration}</span>
+                    </div>
+                    <button
+                      className="song-like-btn"
+                      onClick={(e) => { 
+                        e.stopPropagation()
+                        toggleLike(song)
+                      }}
+                      title={isLiked(song) ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}
+                    >
+                      <Heart 
+                        size={20} 
+                        color={isLiked(song) ? '#ef4444' : '#fff'} 
+                        fill={isLiked(song) ? '#ef4444' : 'none'}
+                        strokeWidth={2}
+                      />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-
-        <MusicPlayer
-          currentSongIndex={currentSongIndex}
-          songs={songs}
-          isPlaying={isPlaying}
-          progress={progress}
-          onTogglePlay={togglePlay}
-          onNext={handleNext}
-          onPrevious={handlePrevious}
-          onProgressChange={handleProgressChange}
-          onShuffle={handleShuffle}
-        />
       </main>
+
+      <MusicPlayer
+        currentSongIndex={currentSongIndex}
+        songs={songs}
+        isPlaying={isPlaying}
+        progress={progress}
+        onTogglePlay={togglePlay}
+        onNext={handleNext}
+        onPrevious={handlePrevious}
+        onProgressChange={handleProgressChange}
+        onShuffle={handleShuffle}
+        isLikedCurrent={isLiked(songs[currentSongIndex])}
+        onToggleLike={() => toggleLike(songs[currentSongIndex])}
+      />
     </div>
   )
 }

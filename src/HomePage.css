@@ -178,6 +178,10 @@
   color: #fff;
 }
 
+.song-card-info {
+  width: 100%;
+}
+
 .song-card-info h3 {
   font-size: 1.1rem;
   font-weight: 600;
@@ -196,7 +200,59 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
+.song-card-info-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
 
+.song-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.song-like-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+  margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Garantir que ícone SVG dentro do botão seja visível */
+.song-like-btn svg {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  stroke-width: 2;
+  display: block;
+}
+
+.song-like-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.6);
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.song-like-btn:active {
+  transform: scale(0.95);
+}
 
 /* ARTISTS */
 .artists h1 {

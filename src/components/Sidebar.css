@@ -70,6 +70,7 @@
 
 .nav-icon {
   font-size: 1.3rem;
+  flex-shrink: 0;
 }
 
 .nav-text {

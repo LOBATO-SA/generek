@@ -1,26 +1,29 @@
 import './Sidebar.css'
 import { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { Home, Search, Disc, ListMusic, Heart, User, Handshake, LogOut, Menu } from "lucide-react"
 
 interface SidebarProps {
-  activeNav: string
-  onNavChange: (nav: string) => void
+  activeNav?: string
+  onNavChange?: (nav: string) => void
 }
 
 function Sidebar({ activeNav, onNavChange }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const location = useLocation()
 
   const navItems = [
-    { id: 'discover', icon: 'map', label: 'Discover' },
-    { id: 'trending', icon: 'arrow-trend-up', label: 'Trending' },
-    { id: 'album', icon: 'compact-disc', label: 'Album' },
-    { id: 'playlist', icon: 'circle-play', label: 'Playlist' },
-    { id: 'favorites', icon: 'heart', label: 'Favorites' }
+    { id: 'discover', path: '/home', icon: Home, label: 'Home' },
+    { id: 'trending', path: '/search', icon: Search, label: 'Search' },
+    { id: 'playlist', path: '/playlist', icon: ListMusic, label: 'Playlist' },
+    { id: 'favorites', path: '/favorites', icon: Heart, label: 'Favorites' },
+    { id: 'artists', path: '/artists', icon: User, label: 'Artists' }
   ]
 
   const bottomItems = [
-    { id: 'profile', icon: 'user', label: 'Profile' },
-    { id: 'settings', icon: 'gear', label: 'Settings' },
-    { id: 'logout', icon: 'right-from-bracket', label: 'Logout' }
+    { id: 'profile', path: '/profile', icon: User, label: 'Profile' },
+    { id: 'settings', path: '/contract', icon: Handshake, label: 'Contract' },
+    { id: 'logout', path: '/auth', icon: LogOut, label: 'Logout' }
   ]
 
   const toggleSidebar = () => {
@@ -31,7 +34,7 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
     <>
       {!isOpen && (
         <button className="sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle menu">
-          <i className="fa fa-bars"></i>
+          <Menu size={24} />
         </button>
       )}
 
@@ -42,44 +45,52 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
             <p>Jane Wilson</p>
           </div>
           <ul>
-            {navItems.map((item) => (
+            {navItems.map((item) => {
+              const IconComponent = item.icon
+              const isActive = location.pathname === item.path || activeNav === item.id
+              return (
+                <li 
+                  key={item.id} 
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    if (onNavChange) onNavChange(item.id)
+                    if (window.innerWidth <= 768) {
+                      setIsOpen(false)
+                    }
+                  }}
+                >
+                  <Link to={item.path}>
+                    <IconComponent className="nav-icon" size={20} />
+                    <span className="nav-text">{item.label}</span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+        
+        <ul>
+          {bottomItems.map((item) => {
+            const IconComponent = item.icon
+            const isActive = location.pathname === item.path || activeNav === item.id
+            return (
               <li 
                 key={item.id} 
-                className={`nav-item ${activeNav === item.id ? 'active' : ''}`} 
+                className={`nav-item ${isActive ? 'active' : ''}`}
                 onClick={() => {
-                  onNavChange(item.id)
+                  if (onNavChange) onNavChange(item.id)
                   if (window.innerWidth <= 768) {
                     setIsOpen(false)
                   }
                 }}
               >
-                <a href="#">
-                  <i className={`fa fa-${item.icon} nav-icon`}></i>
+                <Link to={item.path}>
+                  <IconComponent className="nav-icon" size={20} />
                   <span className="nav-text">{item.label}</span>
-                </a>
+                </Link>
               </li>
-            ))}
-          </ul>
-        </div>
-        
-        <ul>
-          {bottomItems.map((item) => (
-            <li 
-              key={item.id} 
-              className="nav-item"
-              onClick={() => {
-                onNavChange(item.id)
-                if (window.innerWidth <= 768) {
-                  setIsOpen(false)
-                }
-              }}
-            >
-              <a href="#">
-                <i className={`fa fa-${item.icon} nav-icon`}></i>
-                <span className="nav-text">{item.label}</span>
-              </a>
-            </li>
-          ))}
+            )
+          })}
         </ul>
       </aside>
 

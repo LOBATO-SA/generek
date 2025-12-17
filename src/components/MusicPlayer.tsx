@@ -1,4 +1,5 @@
 import './MusicPlayer.css'
+import { Heart } from 'lucide-react'
 
 interface MusicPlayerProps {
   currentSongIndex: number
@@ -16,6 +17,8 @@ interface MusicPlayerProps {
   onPrevious: () => void
   onProgressChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   onShuffle: () => void
+  isLikedCurrent?: boolean
+  onToggleLike?: () => void
 }
 
 function MusicPlayer({ 
@@ -25,7 +28,9 @@ function MusicPlayer({
   progress, 
   onTogglePlay, 
   onNext, 
-  onPrevious 
+  onPrevious, 
+  isLikedCurrent = false,
+  onToggleLike
 }: MusicPlayerProps) {
   const currentSong = songs[currentSongIndex]
   
@@ -98,6 +103,14 @@ function MusicPlayer({
                       <polygon points="5 3 19 12 5 21 5 3" />
                     </svg>
                   )}
+                </div>
+              </button>
+
+              <button className="control-btn" onClick={onToggleLike} aria-label={isLikedCurrent ? "Remover dos favoritos" : "Curtir"}>
+                <div className="btn-shadow" />
+                <div className="btn-glass" />
+                <div className="btn-icon">
+                  <Heart size={20} color={isLikedCurrent ? '#ef4444' : 'currentColor'} fill={isLikedCurrent ? '#ef4444' : 'none'} />
                 </div>
               </button>
               
