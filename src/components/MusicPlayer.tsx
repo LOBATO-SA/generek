@@ -1,5 +1,5 @@
 import './MusicPlayer.css'
-import { Heart } from 'lucide-react'
+import { Heart, ListPlus } from 'lucide-react'
 
 interface MusicPlayerProps {
   currentSongIndex: number
@@ -19,6 +19,7 @@ interface MusicPlayerProps {
   onShuffle: () => void
   isLikedCurrent?: boolean
   onToggleLike?: () => void
+  onAddToPlaylist?: () => void
 }
 
 function MusicPlayer({ 
@@ -30,7 +31,8 @@ function MusicPlayer({
   onNext, 
   onPrevious, 
   isLikedCurrent = false,
-  onToggleLike
+  onToggleLike,
+  onAddToPlaylist
 }: MusicPlayerProps) {
   const currentSong = songs[currentSongIndex]
   
@@ -113,6 +115,16 @@ function MusicPlayer({
                   <Heart size={20} color={isLikedCurrent ? '#ef4444' : 'currentColor'} fill={isLikedCurrent ? '#ef4444' : 'none'} />
                 </div>
               </button>
+
+              {onAddToPlaylist && (
+                <button className="control-btn" onClick={onAddToPlaylist} aria-label="Adicionar à playlist">
+                  <div className="btn-shadow" />
+                  <div className="btn-glass" />
+                  <div className="btn-icon">
+                    <ListPlus size={20} />
+                  </div>
+                </button>
+              )}
               
               <button className="control-btn" onClick={onNext} aria-label="Next track">
                 <div className="btn-shadow" />

@@ -4,10 +4,11 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import { EffectCoverflow, Pagination } from 'swiper/modules'
 import MusicPlayer from './components/MusicPlayer'
 import Sidebar from './components/Sidebar'
+import AddToPlaylistModal from './components/AddToPlaylistModal'
 import 'swiper/css'
 import 'swiper/css/effect-coverflow'
 import 'swiper/css/pagination'
-import { Heart } from 'lucide-react'
+import { Heart, ListPlus } from 'lucide-react'
 
 function HomePage() {
   const [activeNav, setActiveNav] = useState('discover')
@@ -58,6 +59,8 @@ function HomePage() {
   ]
 
   const [likedSongs, setLikedSongs] = useState<Song[]>([])
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false)
+  const [songForPlaylist, setSongForPlaylist] = useState<Song | null>(null)
 
   useEffect(() => {
     try {
@@ -67,6 +70,16 @@ function HomePage() {
       setLikedSongs([])
     }
   }, [])
+
+  const openPlaylistModal = (song: Song) => {
+    setSongForPlaylist(song)
+    setShowPlaylistModal(true)
+  }
+
+  const closePlaylistModal = () => {
+    setShowPlaylistModal(false)
+    setSongForPlaylist(null)
+  }
 
   const saveFavorites = (list: Song[]) => {
     setLikedSongs(list)
@@ -215,6 +228,20 @@ function HomePage() {
                         strokeWidth={2}
                       />
                     </button>
+                    <button
+                      className="song-playlist-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openPlaylistModal(song)
+                      }}
+                      title="Adicionar à Playlist"
+                    >
+                      <ListPlus 
+                        size={20} 
+                        color="#fff"
+                        strokeWidth={2}
+                      />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -235,6 +262,13 @@ function HomePage() {
         onShuffle={handleShuffle}
         isLikedCurrent={isLiked(songs[currentSongIndex])}
         onToggleLike={() => toggleLike(songs[currentSongIndex])}
+        onAddToPlaylist={() => openPlaylistModal(songs[currentSongIndex])}
+      />
+
+      <AddToPlaylistModal
+        isOpen={showPlaylistModal}
+        onClose={closePlaylistModal}
+        song={songForPlaylist}
       />
     </div>
   )
