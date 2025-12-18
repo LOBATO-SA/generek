@@ -1,9 +1,11 @@
 import './ArtistProfilePage.css'
 import Sidebar from '../components/Sidebar'
-import MusicPlayer from '../components/MusicPlayer'
-import { useState, useRef, useEffect } from 'react'
+import GlobalMusicPlayer from '../components/GlobalMusicPlayer'
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, DollarSign, Star, CheckCircle, Play, Calendar, Briefcase, Instagram, Facebook, Heart } from 'lucide-react'
+import { useMusicPlayer } from '../contexts/MusicPlayerContext'
+import type { Song } from '../contexts/MusicPlayerContext'
 
 interface Artist {
   id: string
@@ -23,13 +25,8 @@ interface Artist {
   facebook?: string
 }
 
-interface Song {
+interface ArtistSong extends Song {
   id: string
-  title: string
-  artist: string
-  duration: string
-  cover: string
-  source: string
   plays: number
 }
 
@@ -86,7 +83,7 @@ const mockArtists: Record<string, Artist> = {
   }
 } 
 
-const artistSongs: Record<string, Song[]> = {
+const artistSongs: Record<string, ArtistSong[]> = {
   '1': [
     {
       id: '1',
@@ -152,94 +149,53 @@ const artistSongs: Record<string, Song[]> = {
 function ArtistProfilePage() {
   const { id } = useParams<{ id: string }>()
   const [activeNav, setActiveNav] = useState('artists')
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentSongIndex, setCurrentSongIndex] = useState(0)
-  const [progress, setProgress] = useState(0)
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const STORAGE_KEY = 'likedSongs'
+  const { playSong, isLiked, toggleLike } = useMusicPlayer()
 
   const artist = id ? mockArtists[id] : null
   const songs = id ? artistSongs[id] || [] : []
 
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    const updateProgress = () => {
-      setProgress((audio.currentTime / audio.duration) * 100 || 0)
-    }
-
-    audio.addEventListener('timeupdate', updateProgress)
-    return () => audio.removeEventListener('timeupdate', updateProgress)
-  }, [currentSongIndex])
-
-  const togglePlay = () => {
-    const audio = audioRef.current
-    if (!audio) return
-    if (isPlaying) {
-      audio.pause()
-    } else {
-      audio.play()
-    }
-    setIsPlaying(!isPlaying)
-  }
-
-  const handleNext = () => {
-    setCurrentSongIndex((prev) => (prev + 1) % songs.length)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  const handlePrevious = () => {
-    setCurrentSongIndex((prev) => (prev - 1 + songs.length) % songs.length)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const audio = audioRef.current
-    if (!audio) return
-    const newTime = (parseFloat(e.target.value) / 100) * audio.duration
-    audio.currentTime = newTime
-    setProgress(parseFloat(e.target.value))
-  }
-
-  const handleShuffle = () => {
-    const randomIndex = Math.floor(Math.random() * songs.length)
-    setCurrentSongIndex(randomIndex)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  const playSong = (index: number) => {
-    setCurrentSongIndex(index)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  // Likes helpers
-  const getLikedSongs = (): Song[] => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
+  const handlePlaySong = (index: number) => {
+    const song = songs[index]
+    if (song) {
+      // Converter ArtistSong para Song (removendo campos extras)
+      const songForPlayer: Song = {
+        title: song.title,
+        artist: song.artist,
+        duration: song.duration,
+        cover: song.cover,
+        source: song.source
+      }
+      const playlistForPlayer: Song[] = songs.map(s => ({
+        title: s.title,
+        artist: s.artist,
+        duration: s.duration,
+        cover: s.cover,
+        source: s.source
+      }))
+      playSong(songForPlayer, playlistForPlayer)
     }
   }
 
-  const isLiked = (song: Song) => {
-    return getLikedSongs().some(s => s.source === song.source)
+  const handleToggleLike = (song: ArtistSong) => {
+    const songForContext: Song = {
+      title: song.title,
+      artist: song.artist,
+      duration: song.duration,
+      cover: song.cover,
+      source: song.source
+    }
+    toggleLike(songForContext)
   }
 
-  const toggleLike = (song: Song) => {
-    const current = getLikedSongs()
-    let updated: Song[]
-    if (isLiked(song)) {
-      updated = current.filter(s => s.source !== song.source)
-    } else {
-      updated = [...current, song]
+  const checkIsLiked = (song: ArtistSong) => {
+    const songForContext: Song = {
+      title: song.title,
+      artist: song.artist,
+      duration: song.duration,
+      cover: song.cover,
+      source: song.source
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+    return isLiked(songForContext)
   }
 
   if (!artist) {
@@ -261,7 +217,6 @@ function ArtistProfilePage() {
 
   return (
     <div className="page-container">
-      <audio ref={audioRef} src={songs[currentSongIndex]?.source} />
       <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
       
       <main className="page-content artist-profile-layout">
@@ -298,7 +253,7 @@ function ArtistProfilePage() {
                 </div>
                 <div className="stat">
                   <DollarSign size={18} />
-                  <span>R$ {artist.hourly_rate.toLocaleString('pt-BR')}/hora</span>
+                  <span>KZ {artist.hourly_rate.toLocaleString('pt-BR')}/hora</span>
                 </div>
               </div>
 
@@ -322,8 +277,8 @@ function ArtistProfilePage() {
               {songs.map((song, index) => (
                 <div 
                   key={song.id} 
-                  className={`song-item ${currentSongIndex === index && isPlaying ? 'playing' : ''}`}
-                  onClick={() => playSong(index)}
+                  className="song-item"
+                  onClick={() => handlePlaySong(index)}
                 >
                   <div className="song-play-btn">
                     <Play size={16} fill="currentColor" />
@@ -332,10 +287,10 @@ function ArtistProfilePage() {
                     <img src={song.cover} alt={song.title} />
                     <button
                       className="like-btn-overlay"
-                      onClick={(e) => { e.stopPropagation(); toggleLike(song) }}
-                      title={isLiked(song) ? 'Remover dos Favoritos' : 'Curtir'}
+                      onClick={(e) => { e.stopPropagation(); handleToggleLike(song) }}
+                      title={checkIsLiked(song) ? 'Remover dos Favoritos' : 'Curtir'}
                     >
-                      <Heart size={16} color={isLiked(song) ? '#ef4444' : 'currentColor'} fill={isLiked(song) ? '#ef4444' : 'none'} />
+                      <Heart size={16} color={checkIsLiked(song) ? '#ef4444' : 'currentColor'} fill={checkIsLiked(song) ? '#ef4444' : 'none'} />
                     </button>
                   </div>
                   <div className="song-details">
@@ -359,7 +314,7 @@ function ArtistProfilePage() {
             <div className="pricing-info">
               <div className="pricing-item">
                 <span className="pricing-label">Valor por hora:</span>
-                <span className="pricing-value">R$ {artist.hourly_rate.toLocaleString('pt-BR')}</span>
+                <span className="pricing-value">KZ {artist.hourly_rate.toLocaleString('pt-BR')}</span>
               </div>
               <div className="pricing-item">
                 <span className="pricing-label">Duração mínima:</span>
@@ -384,7 +339,7 @@ function ArtistProfilePage() {
             <div className="sidebar-price">
               <span className="price-label">A partir de</span>
               <div className="price-value">
-                <span className="price-currency">R$</span>
+                <span className="price-currency">KZ</span>
                 <span className="price-amount">{artist.hourly_rate.toLocaleString('pt-BR')}</span>
               </div>
               <span className="price-unit">por hora</span>
@@ -442,19 +397,7 @@ function ArtistProfilePage() {
         </aside>
       </main>
 
-      <MusicPlayer
-        currentSongIndex={currentSongIndex}
-        songs={songs}
-        isPlaying={isPlaying}
-        progress={progress}
-        onTogglePlay={togglePlay}
-        onNext={handleNext}
-        onPrevious={handlePrevious}
-        onProgressChange={handleProgressChange}
-        onShuffle={handleShuffle}
-        isLikedCurrent={songs.length > 0 ? isLiked(songs[currentSongIndex]) : false}
-        onToggleLike={() => songs.length > 0 && toggleLike(songs[currentSongIndex])}
-      />
+      <GlobalMusicPlayer />
     </div>
   )
 }

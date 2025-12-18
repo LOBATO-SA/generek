@@ -1,7 +1,8 @@
 import './Page.css'
 import Sidebar from '../components/Sidebar'
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle, Plus } from 'lucide-react'
 
 interface Booking {
   id: string
@@ -72,8 +73,16 @@ function ContractPage() {
       <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
       <main className="page-content">
         <div className="page-header">
-          <h1>Minhas Contratações</h1>
-          <p>Gerencie suas solicitações de contratação de artistas</p>
+          <div className="header-content">
+            <div>
+              <h1>Minhas Contratações</h1>
+              <p>Gerencie suas solicitações de contratação de artistas</p>
+            </div>
+            <Link to="/artists" className="new-booking-btn">
+              <Plus size={20} />
+              Nova Contratação
+            </Link>
+          </div>
         </div>
 
         {/* Filters */}
@@ -115,6 +124,10 @@ function ContractPage() {
                   ? 'Você ainda não fez nenhuma solicitação de contratação.'
                   : `Não há contratações com status "${getStatusText(filter)}".`}
               </p>
+              <Link to="/artists" className="empty-state-btn">
+                <Plus size={18} />
+                Contratar um Artista
+              </Link>
             </div>
           ) : (
             <div className="bookings-grid">
@@ -166,7 +179,7 @@ function ContractPage() {
                   <div className="booking-footer">
                     <div className="booking-price">
                       <span>Total:</span>
-                      <strong>R$ {booking.totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                      <strong>KZ {booking.totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                     </div>
                     <div className="booking-actions">
                       {booking.status === 'pending' && (

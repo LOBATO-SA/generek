@@ -1,9 +1,19 @@
 import './ArtistsPage.css'
 import Sidebar from '../components/Sidebar'
-import MusicPlayer from '../components/MusicPlayer'
-import { useState, useRef, useEffect } from 'react'
+import GlobalMusicPlayer from '../components/GlobalMusicPlayer'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, MapPin, DollarSign, Star, CheckCircle } from 'lucide-react'
+import { 
+  Search, 
+  MapPin, 
+  Star, 
+  CheckCircle, 
+  Users, 
+  Filter,
+  Music,
+  Calendar,
+  ArrowRight
+} from 'lucide-react'
 
 interface Artist {
   id: string
@@ -16,6 +26,8 @@ interface Artist {
   rating: number
   total_bookings: number
   bio: string
+  followers?: number
+  available?: boolean
 }
 
 const mockArtists: Artist[] = [
@@ -24,154 +36,195 @@ const mockArtists: Artist[] = [
     name: 'Ana Silva',
     avatar_url: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/398875d0-9b9e-494a-8906-210aa3f777e0',
     verified: true,
-    hourly_rate: 2500,
+    hourly_rate: 25000,
     genre: 'Jazz',
-    location: 'São Paulo, SP',
+    location: 'Luanda',
     rating: 4.9,
     total_bookings: 127,
-    bio: 'Cantora profissional com mais de 10 anos de experiência'
+    bio: 'Cantora profissional com mais de 10 anos de experiência em jazz e soul',
+    followers: 15420,
+    available: true
   },
   {
     id: '2',
     name: 'DJ Thunder',
     avatar_url: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/810d1ddc-1168-4990-8d43-a0ffee21fb8c',
     verified: true,
-    hourly_rate: 3500,
-    genre: 'Eletrônica',
-    location: 'Rio de Janeiro, RJ',
+    hourly_rate: 35000,
+    genre: 'Electrónica',
+    location: 'Benguela',
     rating: 4.8,
     total_bookings: 89,
-    bio: 'DJ especializado em festas e eventos corporativos'
+    bio: 'DJ especializado em festas e eventos corporativos com experiência internacional',
+    followers: 28300,
+    available: true
   },
   {
     id: '3',
     name: 'Carlos Mendes',
     avatar_url: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/7bd23b84-d9b0-4604-a7e3-872157a37b61',
     verified: false,
-    hourly_rate: 1800,
-    genre: 'MPB',
-    location: 'Belo Horizonte, MG',
+    hourly_rate: 18000,
+    genre: 'Acústico',
+    location: 'Huambo',
     rating: 4.7,
     total_bookings: 45,
-    bio: 'Violonista e cantor de MPB'
+    bio: 'Guitarrista e cantor especializado em performances acústicas',
+    followers: 8750,
+    available: false
+  },
+  {
+    id: '4',
+    name: 'Luna Star',
+    avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
+    verified: true,
+    hourly_rate: 40000,
+    genre: 'Pop',
+    location: 'Lubango',
+    rating: 5.0,
+    total_bookings: 203,
+    bio: 'Estrela pop em ascensão conhecida por performances ao vivo energéticas',
+    followers: 52100,
+    available: true
+  },
+  {
+    id: '5',
+    name: 'Banda Groove',
+    avatar_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400',
+    verified: true,
+    hourly_rate: 55000,
+    genre: 'Funk & Soul',
+    location: 'Luanda',
+    rating: 4.9,
+    total_bookings: 156,
+    bio: 'Banda de 5 membros trazendo o melhor do funk e soul para os seus eventos',
+    followers: 34200,
+    available: true
+  },
+  {
+    id: '6',
+    name: 'MC Flow',
+    avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
+    verified: false,
+    hourly_rate: 22000,
+    genre: 'Hip Hop',
+    location: 'Cabinda',
+    rating: 4.6,
+    total_bookings: 67,
+    bio: 'Artista de hip hop e MC para festas e eventos especiais',
+    followers: 12800,
+    available: true
   }
 ]
 
+const genres = ['Todos', 'Jazz', 'Electrónica', 'Pop', 'Acústico', 'Hip Hop', 'Funk & Soul']
+
 function ArtistsPage() {
   const [activeNav, setActiveNav] = useState('artists')
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentSongIndex, setCurrentSongIndex] = useState(0)
-  const [progress, setProgress] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedGenre, setSelectedGenre] = useState('Todos')
   const [filteredArtists, setFilteredArtists] = useState(mockArtists)
-  const audioRef = useRef<HTMLAudioElement>(null)
-
-  const songs = [
-    {
-      title: "Redemption",
-      artist: "Besomorph & Coopex",
-      duration: "3:45",
-      cover: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/398875d0-9b9e-494a-8906-210aa3f777e0",
-      source: "https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/Besomorph-Coopex-Redemption.mp3"
-    }
-  ]
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    const updateProgress = () => {
-      setProgress((audio.currentTime / audio.duration) * 100 || 0)
-    }
-
-    audio.addEventListener('timeupdate', updateProgress)
-    return () => audio.removeEventListener('timeupdate', updateProgress)
-  }, [currentSongIndex])
-
-  useEffect(() => {
-    const filtered = mockArtists.filter(artist =>
+    let filtered = mockArtists.filter(artist =>
       artist.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       artist.genre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       artist.location.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    setFilteredArtists(filtered)
-  }, [searchTerm])
-
-  const togglePlay = () => {
-    const audio = audioRef.current
-    if (!audio) return
-    if (isPlaying) {
-      audio.pause()
-    } else {
-      audio.play()
+    
+    if (selectedGenre !== 'Todos') {
+      filtered = filtered.filter(artist => artist.genre === selectedGenre)
     }
-    setIsPlaying(!isPlaying)
-  }
-
-  const handleNext = () => {
-    setCurrentSongIndex((prev) => (prev + 1) % songs.length)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  const handlePrevious = () => {
-    setCurrentSongIndex((prev) => (prev - 1 + songs.length) % songs.length)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const audio = audioRef.current
-    if (!audio) return
-    const newTime = (parseFloat(e.target.value) / 100) * audio.duration
-    audio.currentTime = newTime
-    setProgress(parseFloat(e.target.value))
-  }
-
-  const handleShuffle = () => {
-    const randomIndex = Math.floor(Math.random() * songs.length)
-    setCurrentSongIndex(randomIndex)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
+    
+    setFilteredArtists(filtered)
+  }, [searchTerm, selectedGenre])
 
   return (
     <div className="page-container">
-      <audio ref={audioRef} src={songs[currentSongIndex].source} />
       <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
       
       <main className="page-content">
         {/* Header */}
-        <div className="artists-header">
-          <div className="header-content">
-            <div>
-              <h1>Contrate Artistas</h1>
-              <p>Encontre o artista perfeito para o seu evento</p>
-            </div>
+        <div className="artists-page-header">
+          <div className="header-text">
+            <h1>Artistas</h1>
+            <p>Encontre o artista perfeito para o seu evento</p>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="search-section">
-          <div className="search-bar-container">
-            <Search className="search-icon" size={20} />
+        {/* Search & Filters */}
+        <div className="search-filters-section">
+          <div className="search-bar-wrapper">
+            <Search className="search-icon" size={22} />
             <input
               type="text"
-              placeholder="Buscar por nome, gênero ou localização..."
+              placeholder="Pesquisar artistas por nome, género ou localização..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
             />
+            <button className="search-submit-btn">
+              <Search size={18} />
+              <span>Pesquisar</span>
+            </button>
+            <button 
+              className={`filter-toggle ${showFilters ? 'active' : ''}`}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter size={20} />
+            </button>
           </div>
+          
+          {/* Genre Filters */}
+          <div className={`genre-filters ${showFilters ? 'show' : ''}`}>
+            {genres.map(genre => (
+              <button
+                key={genre}
+                className={`genre-btn ${selectedGenre === genre ? 'active' : ''}`}
+                onClick={() => setSelectedGenre(genre)}
+              >
+                {genre}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Stats Bar */}
+        <div className="stats-bar">
+          <div className="stat-item">
+            <Users size={18} />
+            <span>{mockArtists.length}+ Artistas</span>
+          </div>
+          <div className="stat-item">
+            <Calendar size={18} />
+            <span>500+ Eventos</span>
+          </div>
+          <div className="stat-item">
+            <Star size={18} />
+            <span>4.8 Avaliação Média</span>
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="results-info">
+          <Music size={20} />
+          <span>
+            {filteredArtists.length} artista{filteredArtists.length !== 1 ? 's' : ''} encontrado{filteredArtists.length !== 1 ? 's' : ''}
+            {selectedGenre !== 'Todos' && ` em ${selectedGenre}`}
+          </span>
         </div>
 
         {/* Artists Grid */}
         <div className="artists-grid">
           {filteredArtists.length === 0 ? (
             <div className="no-results">
-              <Search size={48} />
+              <Search size={64} />
               <h3>Nenhum artista encontrado</h3>
-              <p>Tente buscar com outros termos</p>
+              <p>Tente pesquisar com outros termos ou limpe os filtros</p>
+              <button className="clear-btn" onClick={() => { setSearchTerm(''); setSelectedGenre('Todos'); }}>
+                Limpar Filtros
+              </button>
             </div>
           ) : (
             filteredArtists.map((artist) => (
@@ -180,37 +233,54 @@ function ArtistsPage() {
                   <img src={artist.avatar_url} alt={artist.name} />
                   {artist.verified && (
                     <div className="verified-badge">
-                      <CheckCircle size={20} />
+                      <CheckCircle size={18} />
                     </div>
                   )}
+                  {artist.available && (
+                    <div className="available-badge">Disponível</div>
+                  )}
+                  <div className="artist-overlay">
+                    <span className="view-profile">
+                      Ver Perfil
+                      <ArrowRight size={16} />
+                    </span>
+                  </div>
                 </div>
                 
                 <div className="artist-info">
-                  <div className="artist-header">
-                    <h3>{artist.name}</h3>
+                  <div className="artist-top">
+                    <div>
+                      <h3>{artist.name}</h3>
+                      <span className="genre-tag">{artist.genre}</span>
+                    </div>
                     <div className="rating">
                       <Star size={16} fill="currentColor" />
                       <span>{artist.rating}</span>
                     </div>
                   </div>
                   
-                  <p className="genre">{artist.genre}</p>
+                  <p className="bio">{artist.bio}</p>
                   
-                  <div className="artist-details">
-                    <div className="detail">
+                  <div className="artist-meta">
+                    <div className="meta-item">
                       <MapPin size={14} />
                       <span>{artist.location}</span>
                     </div>
-                    <div className="detail">
-                      <DollarSign size={14} />
-                      <span>R$ {artist.hourly_rate.toLocaleString('pt-BR')}/h</span>
+                    <div className="meta-item">
+                      <Users size={14} />
+                      <span>{(artist.followers || 0).toLocaleString()}</span>
                     </div>
                   </div>
                   
-                  <p className="bio">{artist.bio}</p>
-                  
-                  <div className="bookings-count">
-                    {artist.total_bookings} contratações
+                  <div className="artist-footer">
+                    <div className="price">
+                      <span className="currency">Kz</span>
+                      <span>{artist.hourly_rate.toLocaleString('pt-AO')}</span>
+                      <span className="per-hour">/h</span>
+                    </div>
+                    <div className="bookings">
+                      {artist.total_bookings} contratações
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -219,17 +289,7 @@ function ArtistsPage() {
         </div>
       </main>
 
-      <MusicPlayer
-        currentSongIndex={currentSongIndex}
-        songs={songs}
-        isPlaying={isPlaying}
-        progress={progress}
-        onTogglePlay={togglePlay}
-        onNext={handleNext}
-        onPrevious={handlePrevious}
-        onProgressChange={handleProgressChange}
-        onShuffle={handleShuffle}
-      />
+      <GlobalMusicPlayer />
     </div>
   )
 }

@@ -1,10 +1,12 @@
 import './HomePage.css'
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { EffectCoverflow, Pagination } from 'swiper/modules'
-import MusicPlayer from './components/MusicPlayer'
+import GlobalMusicPlayer from './components/GlobalMusicPlayer'
 import Sidebar from './components/Sidebar'
 import AddToPlaylistModal from './components/AddToPlaylistModal'
+import { useMusicPlayer, defaultSongs } from './contexts/MusicPlayerContext'
+import type { Song } from './contexts/MusicPlayerContext'
 import 'swiper/css'
 import 'swiper/css/effect-coverflow'
 import 'swiper/css/pagination'
@@ -12,19 +14,10 @@ import { Heart, ListPlus } from 'lucide-react'
 
 function HomePage() {
   const [activeNav, setActiveNav] = useState('discover')
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentSongIndex, setCurrentSongIndex] = useState(0)
-  const [progress, setProgress] = useState(0)
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const STORAGE_KEY = 'likedSongs'
+  const { playSong, isLiked, toggleLike, songs: currentPlaylist, currentSongIndex } = useMusicPlayer()
 
-  type Song = {
-    title: string
-    artist: string
-    duration: string
-    cover: string
-    source: string
-  }
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false)
+  const [songForPlaylist, setSongForPlaylist] = useState<Song | null>(null)
 
   const playlists = [
     { name: "Midnight Moods", image: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/95b52c32-f5da-4fe6-956d-a5ed118bbdd2" },
@@ -34,42 +27,8 @@ function HomePage() {
     { name: "Uplifting Rhythms", image: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/df461a99-2fb3-4d55-ac16-2e0c6dd783e1" }
   ]
 
-  const songs: Song[] = [
-    {
-      title: "Redemption",
-      artist: "Besomorph & Coopex",
-      duration: "3:45",
-      cover: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/398875d0-9b9e-494a-8906-210aa3f777e0",
-      source: "https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/Besomorph-Coopex-Redemption.mp3"
-    },
-    {
-      title: "What's The Problem?",
-      artist: "OSKI",
-      duration: "4:20",
-      cover: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/810d1ddc-1168-4990-8d43-a0ffee21fb8c",
-      source: "https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/OSKI-Whats-The-Problem.mp3"
-    },
-    {
-      title: "Control",
-      artist: "Unknown Brain x Rival",
-      duration: "3:58",
-      cover: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/7bd23b84-d9b0-4604-a7e3-872157a37b61",
-      source: "https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/Unknown-BrainxRival-Control.mp3"
-    }
-  ]
-
-  const [likedSongs, setLikedSongs] = useState<Song[]>([])
-  const [showPlaylistModal, setShowPlaylistModal] = useState(false)
-  const [songForPlaylist, setSongForPlaylist] = useState<Song | null>(null)
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      setLikedSongs(saved ? JSON.parse(saved) : [])
-    } catch {
-      setLikedSongs([])
-    }
-  }, [])
+  // Músicas recomendadas (usa as default)
+  const songs = defaultSongs
 
   const openPlaylistModal = (song: Song) => {
     setSongForPlaylist(song)
@@ -81,78 +40,16 @@ function HomePage() {
     setSongForPlaylist(null)
   }
 
-  const saveFavorites = (list: Song[]) => {
-    setLikedSongs(list)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
-  }
-
-  const isLiked = (song: Song) => likedSongs.some(s => s.source === song.source)
-
-  const toggleLike = (song: Song) => {
-    if (isLiked(song)) {
-      const updated = likedSongs.filter(s => s.source !== song.source)
-      saveFavorites(updated)
-    } else {
-      const updated = [...likedSongs, song]
-      saveFavorites(updated)
+  // Obter a música atual para o modal de playlist
+  const getCurrentSong = () => {
+    if (currentPlaylist.length > 0 && currentPlaylist[currentSongIndex]) {
+      return currentPlaylist[currentSongIndex]
     }
-  }
-
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    const updateProgress = () => {
-      setProgress((audio.currentTime / audio.duration) * 100 || 0)
-    }
-
-    audio.addEventListener('timeupdate', updateProgress)
-    return () => audio.removeEventListener('timeupdate', updateProgress)
-  }, [currentSongIndex])
-
-  const togglePlay = () => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    if (isPlaying) {
-      audio.pause()
-    } else {
-      audio.play()
-    }
-    setIsPlaying(!isPlaying)
-  }
-
-  const handleNext = () => {
-    setCurrentSongIndex((prev) => (prev + 1) % songs.length)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  const handlePrevious = () => {
-    setCurrentSongIndex((prev) => (prev - 1 + songs.length) % songs.length)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const audio = audioRef.current
-    if (!audio) return
-    const newTime = (parseFloat(e.target.value) / 100) * audio.duration
-    audio.currentTime = newTime
-    setProgress(parseFloat(e.target.value))
-  }
-
-  const handleShuffle = () => {
-    const randomIndex = Math.floor(Math.random() * songs.length)
-    setCurrentSongIndex(randomIndex)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
+    return songs[0]
   }
 
   return (
     <div className="home-page">
-      <audio ref={audioRef} src={songs[currentSongIndex].source} />
-      
       <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
 
       <main className="content">
@@ -188,7 +85,7 @@ function HomePage() {
         </div>
 
         <div className="songs-section">
-          <h1>Recommended Songs</h1>
+          <h1>Músicas recomendadas</h1>
           <div className="songs-grid">
             {songs.map((song, index) => (
               <div key={index} className="song-card">
@@ -196,11 +93,7 @@ function HomePage() {
                   <img src={song.cover} alt={song.title} />
                   <div 
                     className="play-overlay"
-                    onClick={() => {
-                      setCurrentSongIndex(index)
-                      setIsPlaying(true)
-                      setTimeout(() => audioRef.current?.play(), 100)
-                    }}
+                    onClick={() => playSong(song, songs)}
                     style={{ cursor: 'pointer' }}
                   >
                     <i className="fa-solid fa-play"></i>
@@ -250,19 +143,8 @@ function HomePage() {
         </div>
       </main>
 
-      <MusicPlayer
-        currentSongIndex={currentSongIndex}
-        songs={songs}
-        isPlaying={isPlaying}
-        progress={progress}
-        onTogglePlay={togglePlay}
-        onNext={handleNext}
-        onPrevious={handlePrevious}
-        onProgressChange={handleProgressChange}
-        onShuffle={handleShuffle}
-        isLikedCurrent={isLiked(songs[currentSongIndex])}
-        onToggleLike={() => toggleLike(songs[currentSongIndex])}
-        onAddToPlaylist={() => openPlaylistModal(songs[currentSongIndex])}
+      <GlobalMusicPlayer 
+        onAddToPlaylist={() => openPlaylistModal(getCurrentSong())}
       />
 
       <AddToPlaylistModal

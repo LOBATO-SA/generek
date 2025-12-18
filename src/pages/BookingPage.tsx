@@ -2,7 +2,7 @@ import './BookingPage.css'
 import Sidebar from '../components/Sidebar'
 import { useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, CheckCircle, X, PartyPopper } from 'lucide-react'
 
 interface Artist {
   id: string
@@ -51,6 +51,8 @@ function BookingPage() {
     notes: ''
   })
 
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+
   const calculateTotal = () => {
     if (!artist?.hourly_rate || !formData.duration) return 0
     return artist.hourly_rate * parseInt(formData.duration)
@@ -82,7 +84,11 @@ function BookingPage() {
     bookings.push(newBooking)
     localStorage.setItem('bookings', JSON.stringify(bookings))
 
-    alert('Solicitação de contratação enviada com sucesso!')
+    setShowSuccessModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowSuccessModal(false)
     navigate('/contract')
   }
 
@@ -174,7 +180,7 @@ function BookingPage() {
                   required
                 />
                 <p className="form-hint">
-                  Valor: R$ {artist.hourly_rate.toLocaleString('pt-BR')}/hora
+                  Valor: KZ {artist.hourly_rate.toLocaleString('pt-BR')}/hora
                 </p>
               </div>
 
@@ -277,7 +283,7 @@ function BookingPage() {
               <div className="summary-price">
                 <div className="price-row">
                   <span>Valor por hora</span>
-                  <span>R$ {artist.hourly_rate.toLocaleString('pt-BR')}</span>
+                  <span>KZ {artist.hourly_rate.toLocaleString('pt-BR')}</span>
                 </div>
                 <div className="price-row">
                   <span>Duração</span>
@@ -286,7 +292,7 @@ function BookingPage() {
                 <div className="price-total">
                   <span>Total</span>
                   <span className="total-value">
-                    R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    KZ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -298,6 +304,50 @@ function BookingPage() {
             </div>
           </aside>
         </div>
+
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <div className="modal-overlay" onClick={handleCloseModal}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={handleCloseModal}>
+                <X size={24} />
+              </button>
+              
+              <div className="modal-icon">
+                <PartyPopper size={48} />
+              </div>
+              
+              <h2 className="modal-title">Solicitação Enviada!</h2>
+              
+              <p className="modal-message">
+                A sua solicitação de contratação para <strong>{artist.name}</strong> foi enviada com sucesso!
+              </p>
+              
+              <div className="modal-details">
+                <div className="modal-detail-item">
+                  <Calendar size={18} />
+                  <span>{formData.eventDate && new Date(formData.eventDate + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
+                </div>
+                <div className="modal-detail-item">
+                  <Clock size={18} />
+                  <span>{formData.duration} horas</span>
+                </div>
+                <div className="modal-detail-item">
+                  <MapPin size={18} />
+                  <span>{formData.location}</span>
+                </div>
+              </div>
+              
+              <p className="modal-note">
+                Você receberá uma confirmação por email assim que o artista responder.
+              </p>
+              
+              <button className="modal-button" onClick={handleCloseModal}>
+                Ver Minhas Contratações
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

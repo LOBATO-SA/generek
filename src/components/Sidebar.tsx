@@ -13,17 +13,17 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
   const location = useLocation()
 
   const navItems = [
-    { id: 'discover', path: '/home', icon: Home, label: 'Home' },
-    { id: 'trending', path: '/search', icon: Search, label: 'Search' },
+    { id: 'discover', path: '/home', icon: Home, label: 'Página Inicial' },
+    { id: 'trending', path: '/search', icon: Search, label: 'Pesquisar' },
     { id: 'playlist', path: '/playlist', icon: ListMusic, label: 'Playlist' },
-    { id: 'favorites', path: '/favorites', icon: Heart, label: 'Favorites' },
-    { id: 'artists', path: '/artists', icon: User, label: 'Artists' }
+    { id: 'favorites', path: '/favorites', icon: Heart, label: 'Favoritos' },
+    { id: 'artists', path: '/artists', icon: User, label: 'Artistas' }
   ]
 
   const bottomItems = [
-    { id: 'profile', path: '/profile', icon: User, label: 'Profile' },
-    { id: 'settings', path: '/contract', icon: Handshake, label: 'Contract' },
-    { id: 'logout', path: '/auth', icon: LogOut, label: 'Logout' }
+    { id: 'profile', path: '/profile', icon: User, label: 'Perfil' },
+    { id: 'settings', path: '/contract', icon: Handshake, label: 'Contratar' },
+    { id: 'logout', path: '/auth', icon: LogOut, label: 'Sair' }
   ]
 
   const toggleSidebar = () => {
@@ -59,7 +59,7 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
                     }
                   }}
                 >
-                  <Link to={item.path}>
+                  <Link to={item.path} data-tooltip={item.label}>
                     <IconComponent className="nav-icon" size={20} />
                     <span className="nav-text">{item.label}</span>
                   </Link>
@@ -84,7 +84,7 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
                   }
                 }}
               >
-                <Link to={item.path}>
+                <Link to={item.path} data-tooltip={item.label}>
                   <IconComponent className="nav-icon" size={20} />
                   <span className="nav-text">{item.label}</span>
                 </Link>

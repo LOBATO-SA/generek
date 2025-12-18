@@ -14,23 +14,26 @@ import ContractPage from './pages/ContractPage.tsx'
 import ArtistsPage from './pages/ArtistsPage.tsx'
 import ArtistProfilePage from './pages/ArtistProfilePage.tsx'
 import BookingPage from './pages/BookingPage.tsx'
+import { MusicPlayerProvider } from './contexts/MusicPlayerContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/playlist" element={<PlaylistPage />} />
-        <Route path="/favorites" element={<FavoritesPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/contract" element={<ContractPage />} />
-        <Route path="/artists" element={<ArtistsPage />} />
-        <Route path="/artists/:id" element={<ArtistProfilePage />} />
-        <Route path="/booking" element={<BookingPage />} />
-      </Routes>
+      <MusicPlayerProvider>
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/playlist" element={<PlaylistPage />} />
+          <Route path="/favorites" element={<FavoritesPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/contract" element={<ContractPage />} />
+          <Route path="/artists" element={<ArtistsPage />} />
+          <Route path="/artists/:id" element={<ArtistProfilePage />} />
+          <Route path="/booking" element={<BookingPage />} />
+        </Routes>
+      </MusicPlayerProvider>
     </BrowserRouter>
   </StrictMode>,
 )

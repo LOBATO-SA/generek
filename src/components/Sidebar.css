@@ -79,6 +79,55 @@
   font-weight: 500;
 }
 
+/* Tooltip styles for desktop */
+.nav-item a {
+  position: relative;
+}
+
+.nav-item a::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(30, 30, 50, 0.95);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 200;
+}
+
+.nav-item a::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: rgba(30, 30, 50, 0.95);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 200;
+}
+
+@media (min-width: 769px) {
+  .nav-item a:hover::after,
+  .nav-item a:hover::before {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
 /* SIDEBAR TOGGLE BUTTON */
 .sidebar-toggle {
   display: none;

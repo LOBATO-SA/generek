@@ -1,18 +1,16 @@
 import './Page.css'
 import './PlaylistPage.css'
 import Sidebar from '../components/Sidebar'
-import MusicPlayer from '../components/MusicPlayer'
-import { useState, useRef, useEffect } from 'react'
+import GlobalMusicPlayer from '../components/GlobalMusicPlayer'
+import { useState, useEffect } from 'react'
 import { Plus, Play, Trash2, Music, MoreVertical, X } from 'lucide-react'
 import { usePlaylists } from '../hooks/usePlaylists'
-import type { Song, Playlist } from '../hooks/usePlaylists'
+import type { Playlist } from '../hooks/usePlaylists'
+import { useMusicPlayer } from '../contexts/MusicPlayerContext'
 
 function PlaylistPage() {
   const [activeNav, setActiveNav] = useState('playlist')
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentSongIndex, setCurrentSongIndex] = useState(0)
-  const [progress, setProgress] = useState(0)
-  const audioRef = useRef<HTMLAudioElement>(null)
+  const { playSong, playPlaylist } = useMusicPlayer()
 
   // Playlist management
   const { playlists, createPlaylist, deletePlaylist, removeSongFromPlaylist } = usePlaylists()
@@ -21,17 +19,6 @@ function PlaylistPage() {
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [newPlaylistDescription, setNewPlaylistDescription] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
-
-  // Músicas da playlist selecionada ou placeholder
-  const songs: Song[] = selectedPlaylist?.songs.length 
-    ? selectedPlaylist.songs 
-    : [{
-        title: "Selecione uma playlist",
-        artist: "para ver as músicas",
-        duration: "0:00",
-        cover: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/95b52c32-f5da-4fe6-956d-a5ed118bbdd2",
-        source: ""
-      }]
 
   // Atualizar playlist selecionada quando playlists mudam
   useEffect(() => {
@@ -43,67 +30,21 @@ function PlaylistPage() {
         setSelectedPlaylist(null)
       }
     }
-  }, [playlists])
+  }, [playlists, selectedPlaylist])
 
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    const updateProgress = () => {
-      setProgress((audio.currentTime / audio.duration) * 100 || 0)
+  const handlePlaySong = (index: number) => {
+    if (!selectedPlaylist?.songs.length) return
+    const song = selectedPlaylist.songs[index]
+    if (song) {
+      playSong(song, selectedPlaylist.songs)
     }
+  }
 
-    audio.addEventListener('timeupdate', updateProgress)
-    return () => audio.removeEventListener('timeupdate', updateProgress)
-  }, [currentSongIndex])
-
-  const togglePlay = () => {
-    if (!selectedPlaylist?.songs.length) return
-    const audio = audioRef.current
-    if (!audio) return
-    if (isPlaying) {
-      audio.pause()
-    } else {
-      audio.play()
+  const handlePlayPlaylist = (playlist: Playlist) => {
+    if (playlist.songs.length > 0) {
+      setSelectedPlaylist(playlist)
+      playPlaylist(playlist.songs, 0)
     }
-    setIsPlaying(!isPlaying)
-  }
-
-  const handleNext = () => {
-    if (!selectedPlaylist?.songs.length) return
-    setCurrentSongIndex((prev) => (prev + 1) % songs.length)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  const handlePrevious = () => {
-    if (!selectedPlaylist?.songs.length) return
-    setCurrentSongIndex((prev) => (prev - 1 + songs.length) % songs.length)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const audio = audioRef.current
-    if (!audio) return
-    const newTime = (parseFloat(e.target.value) / 100) * audio.duration
-    audio.currentTime = newTime
-    setProgress(parseFloat(e.target.value))
-  }
-
-  const handleShuffle = () => {
-    if (!selectedPlaylist?.songs.length) return
-    const randomIndex = Math.floor(Math.random() * songs.length)
-    setCurrentSongIndex(randomIndex)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
-  }
-
-  const playSong = (index: number) => {
-    if (!selectedPlaylist?.songs.length) return
-    setCurrentSongIndex(index)
-    setIsPlaying(true)
-    setTimeout(() => audioRef.current?.play(), 100)
   }
 
   const handleCreatePlaylist = () => {
@@ -118,8 +59,6 @@ function PlaylistPage() {
     deletePlaylist(playlistId)
     if (selectedPlaylist?.id === playlistId) {
       setSelectedPlaylist(null)
-      setCurrentSongIndex(0)
-      setIsPlaying(false)
     }
     setShowDeleteConfirm(null)
   }
@@ -127,16 +66,10 @@ function PlaylistPage() {
   const handleRemoveSong = (songSource: string) => {
     if (!selectedPlaylist) return
     removeSongFromPlaylist(selectedPlaylist.id, songSource)
-    if (currentSongIndex >= selectedPlaylist.songs.length - 1) {
-      setCurrentSongIndex(Math.max(0, selectedPlaylist.songs.length - 2))
-    }
   }
 
   return (
     <div className="page-container">
-      {selectedPlaylist?.songs.length ? (
-        <audio ref={audioRef} src={songs[currentSongIndex]?.source} />
-      ) : null}
       <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
       
       <main className="page-content">
@@ -167,11 +100,7 @@ function PlaylistPage() {
               <div 
                 key={playlist.id} 
                 className={`playlist-card ${selectedPlaylist?.id === playlist.id ? 'selected' : ''}`}
-                onClick={() => {
-                  setSelectedPlaylist(playlist)
-                  setCurrentSongIndex(0)
-                  setIsPlaying(false)
-                }}
+                onClick={() => setSelectedPlaylist(playlist)}
               >
                 <div className="playlist-card-image">
                   <img src={playlist.cover} alt={playlist.name} />
@@ -180,12 +109,7 @@ function PlaylistPage() {
                       className="play-playlist-btn"
                       onClick={(e) => {
                         e.stopPropagation()
-                        if (playlist.songs.length > 0) {
-                          setSelectedPlaylist(playlist)
-                          setCurrentSongIndex(0)
-                          setIsPlaying(true)
-                          setTimeout(() => audioRef.current?.play(), 100)
-                        }
+                        handlePlayPlaylist(playlist)
                       }}
                     >
                       <Play size={28} fill="white" />
@@ -245,11 +169,11 @@ function PlaylistPage() {
                 {selectedPlaylist.songs.map((song, index) => (
                   <div 
                     key={song.source} 
-                    className={`playlist-song-item ${currentSongIndex === index && isPlaying ? 'playing' : ''}`}
+                    className="playlist-song-item"
                   >
                     <button 
                       className="song-play-btn-small"
-                      onClick={() => playSong(index)}
+                      onClick={() => handlePlaySong(index)}
                     >
                       <Play size={16} fill="currentColor" />
                     </button>
@@ -324,19 +248,7 @@ function PlaylistPage() {
         )}
       </main>
 
-      {selectedPlaylist?.songs.length ? (
-        <MusicPlayer
-          currentSongIndex={currentSongIndex}
-          songs={songs}
-          isPlaying={isPlaying}
-          progress={progress}
-          onTogglePlay={togglePlay}
-          onNext={handleNext}
-          onPrevious={handlePrevious}
-          onProgressChange={handleProgressChange}
-          onShuffle={handleShuffle}
-        />
-      ) : null}
+      <GlobalMusicPlayer />
     </div>
   )
 }
