@@ -1,7 +1,8 @@
 import './Sidebar.css'
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { Home, Search, Disc, ListMusic, Heart, User, Handshake, LogOut, Menu } from "lucide-react"
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Home, Search, Disc, ListMusic, Heart, User, Handshake, LogOut, Menu, UserRoundPen } from "lucide-react"
+import { useAuth } from '../contexts/AuthContext.tsx'
 
 interface SidebarProps {
   activeNav?: string
@@ -11,6 +12,8 @@ interface SidebarProps {
 function Sidebar({ activeNav, onNavChange }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { signOut, profile } = useAuth()
 
   const navItems = [
     { id: 'discover', path: '/home', icon: Home, label: 'Página Inicial' },
@@ -21,7 +24,7 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
   ]
 
   const bottomItems = [
-    { id: 'profile', path: '/profile', icon: User, label: 'Perfil' },
+    { id: 'profile', path: '/profile', icon: UserRoundPen, label: 'Perfil' },
     { id: 'settings', path: '/contract', icon: Handshake, label: 'Contratar' },
     { id: 'logout', path: '/auth', icon: LogOut, label: 'Sair' }
   ]
@@ -41,8 +44,8 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
       <aside className={`main-menu ${isOpen ? 'open' : ''}`}>
         <div>
           <div className="user-info">
-            <img src="https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/37e5ccfa-f9ee-458b-afa2-dcd85b495e4e" alt="user" />
-            <p>Jane Wilson</p>
+            <img src={profile?.avatar_url || "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/37e5ccfa-f9ee-458b-afa2-dcd85b495e4e"} alt="user" />
+            <p>{profile?.full_name || 'Usuário'}</p>
           </div>
           <ul>
             {navItems.map((item) => {
@@ -73,21 +76,35 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
           {bottomItems.map((item) => {
             const IconComponent = item.icon
             const isActive = location.pathname === item.path || activeNav === item.id
+            const isLogout = item.id === 'logout'
+            
             return (
               <li 
                 key={item.id} 
                 className={`nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => {
+                onClick={async () => {
+                  if (isLogout) {
+                    await signOut()
+                    navigate('/auth')
+                    return
+                  }
                   if (onNavChange) onNavChange(item.id)
                   if (window.innerWidth <= 768) {
                     setIsOpen(false)
                   }
                 }}
               >
-                <Link to={item.path} data-tooltip={item.label}>
-                  <IconComponent className="nav-icon" size={20} />
-                  <span className="nav-text">{item.label}</span>
-                </Link>
+                {isLogout ? (
+                  <a href="#" data-tooltip={item.label} onClick={(e) => e.preventDefault()}>
+                    <IconComponent className="nav-icon" size={20} />
+                    <span className="nav-text">{item.label}</span>
+                  </a>
+                ) : (
+                  <Link to={item.path} data-tooltip={item.label}>
+                    <IconComponent className="nav-icon" size={20} />
+                    <span className="nav-text">{item.label}</span>
+                  </Link>
+                )}
               </li>
             )
           })}

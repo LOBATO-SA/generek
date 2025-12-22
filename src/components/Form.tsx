@@ -1,21 +1,26 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import type { UserType } from '../types';
 
 interface FormProps {
   isLogin?: boolean;
-  onSubmit?: (data: { email: string; password: string; name?: string }) => void;
+  onSubmit?: (data: { email: string; password: string; name?: string; userType?: UserType }) => void;
   onToggleMode?: () => void;
+  loading?: boolean;
+  error?: string | null;
+  successMessage?: string | null;
 }
 
-const Form: React.FC<FormProps> = ({ isLogin = true, onSubmit, onToggleMode }) => {
+const Form: React.FC<FormProps> = ({ isLogin = true, onSubmit, onToggleMode, loading = false, error = null, successMessage = null }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [userType, setUserType] = useState<UserType>('listener');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSubmit) {
-      onSubmit(isLogin ? { email, password } : { email, password, name });
+      onSubmit(isLogin ? { email, password } : { email, password, name, userType });
     }
   };
 
@@ -38,6 +43,38 @@ const Form: React.FC<FormProps> = ({ isLogin = true, onSubmit, onToggleMode }) =
               onChange={(e) => setName(e.target.value)}
               required
             />
+          </div>
+        )}
+
+        {!isLogin && (
+          <div className="user-type-selector">
+            <p className="user-type-label">Eu sou:</p>
+            <div className="user-type-options">
+              <button
+                type="button"
+                className={`user-type-btn ${userType === 'listener' ? 'active' : ''}`}
+                onClick={() => setUserType('listener')}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M8 3a5 5 0 0 0-5 5v1h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a6 6 0 1 1 12 0v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1V8a5 5 0 0 0-5-5z"/>
+                </svg>
+                <span>Ouvinte</span>
+                <small>Quero contratar artistas</small>
+              </button>
+              <button
+                type="button"
+                className={`user-type-btn ${userType === 'artist' ? 'active' : ''}`}
+                onClick={() => setUserType('artist')}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M6 13c0 1.105-1.12 2-2.5 2S1 14.105 1 13c0-1.104 1.12-2 2.5-2s2.5.896 2.5 2zm9-2c0 1.105-1.12 2-2.5 2s-2.5-.895-2.5-2 1.12-2 2.5-2 2.5.895 2.5 2z"/>
+                  <path fillRule="evenodd" d="M14 11V2h1v9h-1zM6 3v10H5V3h1z"/>
+                  <path d="M5 2.905a1 1 0 0 1 .9-.995l8-.8a1 1 0 0 1 1.1.995V3L5 4V2.905z"/>
+                </svg>
+                <span>Artista</span>
+                <small>Quero ser contratado</small>
+              </button>
+            </div>
           </div>
         )}
 
@@ -71,10 +108,22 @@ const Form: React.FC<FormProps> = ({ isLogin = true, onSubmit, onToggleMode }) =
         </div>
 
         <div className="btn">
-          <button type="submit" className="button1">
-            {isLogin ? 'Entrar' : 'Cadastrar'}
+          <button type="submit" className="button1" disabled={loading}>
+            {loading ? 'Carregando...' : (isLogin ? 'Entrar' : 'Cadastrar')}
           </button>
         </div>
+
+        {successMessage && (
+          <div className="success-message">
+            {successMessage}
+          </div>
+        )}
+
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
 
         {isLogin && (
           <button type="button" className="button3">Esqueceu a senha?</button>
@@ -240,6 +289,96 @@ const StyledWrapper = styled.div`
 
   .toggle-mode button:hover {
     color: #6bb1ff;
+  }
+
+  .user-type-selector {
+    margin-top: 0.5em;
+  }
+
+  .user-type-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9em;
+    margin-bottom: 0.5em;
+    text-align: center;
+  }
+
+  .user-type-options {
+    display: flex;
+    gap: 0.5em;
+  }
+
+  .user-type-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3em;
+    padding: 0.8em 0.5em;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background-color: #252525;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .user-type-btn:hover {
+    border-color: rgba(74, 158, 255, 0.5);
+    background-color: #2a2a2a;
+  }
+
+  .user-type-btn.active {
+    border-color: #4a9eff;
+    background-color: rgba(74, 158, 255, 0.15);
+    color: white;
+  }
+
+  .user-type-btn span {
+    font-weight: 600;
+    font-size: 0.9em;
+  }
+
+  .user-type-btn small {
+    font-size: 0.7em;
+    opacity: 0.7;
+    text-align: center;
+  }
+
+  .user-type-btn svg {
+    opacity: 0.8;
+  }
+
+  .user-type-btn.active svg {
+    opacity: 1;
+    fill: #4a9eff;
+  }
+
+  .error-message {
+    background-color: rgba(255, 59, 48, 0.15);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    color: #ff6b6b;
+    padding: 0.6em 0.8em;
+    border-radius: 8px;
+    font-size: 0.85em;
+    text-align: center;
+    margin-top: 0.5em;
+  }
+
+  .success-message {
+    background-color: rgba(52, 199, 89, 0.15);
+    border: 1px solid rgba(52, 199, 89, 0.3);
+    color: #34c759;
+    padding: 0.6em 0.8em;
+    border-radius: 8px;
+    font-size: 0.85em;
+    text-align: center;
+    margin-top: 0.5em;
+  }
+
+  .button1:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
   }
 `;
 

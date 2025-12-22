@@ -15,25 +15,68 @@ import ArtistsPage from './pages/ArtistsPage.tsx'
 import ArtistProfilePage from './pages/ArtistProfilePage.tsx'
 import BookingPage from './pages/BookingPage.tsx'
 import { MusicPlayerProvider } from './contexts/MusicPlayerContext.tsx'
+import { AuthProvider } from './contexts/AuthContext.tsx'
+import { ProtectedRoute } from './components/ProtectedRoute.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <MusicPlayerProvider>
-        <Routes>
-          <Route path="/" element={<App />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/playlist" element={<PlaylistPage />} />
-          <Route path="/favorites" element={<FavoritesPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/contract" element={<ContractPage />} />
-          <Route path="/artists" element={<ArtistsPage />} />
-          <Route path="/artists/:id" element={<ArtistProfilePage />} />
-          <Route path="/booking" element={<BookingPage />} />
-        </Routes>
-      </MusicPlayerProvider>
+      <AuthProvider>
+        <MusicPlayerProvider>
+          <Routes>
+            {/* Rotas Públicas */}
+            <Route path="/" element={<App />} />
+            <Route path="/auth" element={<AuthPage />} />
+
+            {/* Rotas Protegidas */}
+            <Route path="/home" element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/search" element={
+              <ProtectedRoute>
+                <SearchPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/playlist" element={
+              <ProtectedRoute>
+                <PlaylistPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/favorites" element={
+              <ProtectedRoute>
+                <FavoritesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/contract" element={
+              <ProtectedRoute>
+                <ContractPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/artists" element={
+              <ProtectedRoute>
+                <ArtistsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/artists/:id" element={
+              <ProtectedRoute>
+                <ArtistProfilePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/booking" element={
+              <ProtectedRoute>
+                <BookingPage />
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </MusicPlayerProvider>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )
