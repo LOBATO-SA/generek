@@ -14,9 +14,13 @@ import ContractPage from './pages/ContractPage.tsx'
 import ArtistsPage from './pages/ArtistsPage.tsx'
 import ArtistProfilePage from './pages/ArtistProfilePage.tsx'
 import BookingPage from './pages/BookingPage.tsx'
-import { MusicPlayerProvider } from './contexts/MusicPlayerContext.tsx'
-import { AuthProvider } from './contexts/AuthContext.tsx'
-import { ProtectedRoute } from './components/ProtectedRoute.tsx'
+// Páginas específicas para Artistas
+import ArtistBioPage from './pages/artist/ArtistBioPage'
+import ArtistMusicPage from './pages/artist/ArtistMusicPage'
+import ArtistRequestsPage from './pages/artist/ArtistRequestsPage'
+import { MusicPlayerProvider } from './contexts/MusicPlayerContext'
+import { AuthProvider } from './contexts/AuthContext'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -72,6 +76,23 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/booking" element={
               <ProtectedRoute>
                 <BookingPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Rotas específicas para Artistas */}
+            <Route path="/artist/bio" element={
+              <ProtectedRoute requiredUserType="artist">
+                <ArtistBioPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/artist/music" element={
+              <ProtectedRoute requiredUserType="artist">
+                <ArtistMusicPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/artist/requests" element={
+              <ProtectedRoute requiredUserType="artist">
+                <ArtistRequestsPage />
               </ProtectedRoute>
             } />
           </Routes>

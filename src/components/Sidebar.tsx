@@ -1,7 +1,7 @@
 import './Sidebar.css'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Search, Disc, ListMusic, Heart, User, Handshake, LogOut, Menu, UserRoundPen } from "lucide-react"
+import { Home, Search, Disc, ListMusic, Heart, User, Handshake, LogOut, Menu, UserRoundPen, Music, FileText, MessageSquare } from "lucide-react"
 import { useAuth } from '../contexts/AuthContext.tsx'
 
 interface SidebarProps {
@@ -15,7 +15,10 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
   const navigate = useNavigate()
   const { signOut, profile } = useAuth()
 
-  const navItems = [
+  const isArtist = profile?.user_type === 'artist'
+
+  // Menu para Ouvintes
+  const listenerNavItems = [
     { id: 'discover', path: '/home', icon: Home, label: 'Página Inicial' },
     { id: 'trending', path: '/search', icon: Search, label: 'Pesquisar' },
     { id: 'playlist', path: '/playlist', icon: ListMusic, label: 'Playlist' },
@@ -23,11 +26,26 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
     { id: 'artists', path: '/artists', icon: User, label: 'Artistas' }
   ]
 
-  const bottomItems = [
+  const listenerBottomItems = [
     { id: 'profile', path: '/profile', icon: UserRoundPen, label: 'Perfil' },
     { id: 'settings', path: '/contract', icon: Handshake, label: 'Contratar' },
     { id: 'logout', path: '/auth', icon: LogOut, label: 'Sair' }
   ]
+
+  // Menu para Artistas
+  const artistNavItems = [
+    { id: 'bio', path: '/artist/bio', icon: FileText, label: 'Minha Bio' },
+    { id: 'musicas', path: '/artist/music', icon: Music, label: 'Minhas Músicas' },
+    { id: 'solicitacoes', path: '/artist/requests', icon: MessageSquare, label: 'Solicitações' }
+  ]
+
+  const artistBottomItems = [
+    { id: 'profile', path: '/profile', icon: UserRoundPen, label: 'Perfil' },
+    { id: 'logout', path: '/auth', icon: LogOut, label: 'Sair' }
+  ]
+
+  const navItems = isArtist ? artistNavItems : listenerNavItems
+  const bottomItems = isArtist ? artistBottomItems : listenerBottomItems
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen)

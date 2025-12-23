@@ -4,7 +4,7 @@ import PlantAnimation from './components/PlantAnimation'
 import MusicToggleButton from './components/MusicToggleButton'
 import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from './contexts/AuthContext.tsx'
+import { useAuth } from './contexts/AuthContext'
 import type { UserType } from './types'
 
 function AuthPage() {

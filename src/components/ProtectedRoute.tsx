@@ -6,9 +6,10 @@ import type { ReactNode } from 'react'
 interface ProtectedRouteProps {
   children: ReactNode
   allowedUserTypes?: UserType[]
+  requiredUserType?: UserType
 }
 
-export function ProtectedRoute({ children, allowedUserTypes }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, allowedUserTypes, requiredUserType }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth()
 
   // Mostrar loading enquanto verifica autenticação
@@ -32,13 +33,15 @@ export function ProtectedRoute({ children, allowedUserTypes }: ProtectedRoutePro
     return <Navigate to="/auth" replace />
   }
 
-  // Verificar tipo de usuário se especificado
+  // Verificar tipo de usuário se especificado (allowedUserTypes - array)
   if (allowedUserTypes && profile && !allowedUserTypes.includes(profile.user_type)) {
-    // Redirecionar para home se não tiver permissão
+    return <Navigate to="/home" replace />
+  }
+
+  // Verificar tipo de usuário se especificado (requiredUserType - único)
+  if (requiredUserType && profile && profile.user_type !== requiredUserType) {
     return <Navigate to="/home" replace />
   }
 
   return <>{children}</>
 }
-
-export default ProtectedRoute
