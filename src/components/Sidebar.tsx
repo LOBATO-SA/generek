@@ -1,7 +1,7 @@
 import './Sidebar.css'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Search, Disc, ListMusic, Heart, User, Handshake, LogOut, Menu, UserRoundPen, Music, FileText, MessageSquare } from "lucide-react"
+import { Home, Search, ListMusic, Heart, User, Handshake, LogOut, Menu, UserRoundPen, Music, FileText, MessageSquare } from "lucide-react"
 import { useAuth } from '../contexts/AuthContext.tsx'
 
 interface SidebarProps {
@@ -70,8 +70,8 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
               const IconComponent = item.icon
               const isActive = location.pathname === item.path || activeNav === item.id
               return (
-                <li 
-                  key={item.id} 
+                <li
+                  key={item.id}
                   className={`nav-item ${isActive ? 'active' : ''}`}
                   onClick={() => {
                     if (onNavChange) onNavChange(item.id)
@@ -89,16 +89,16 @@ function Sidebar({ activeNav, onNavChange }: SidebarProps) {
             })}
           </ul>
         </div>
-        
+
         <ul>
           {bottomItems.map((item) => {
             const IconComponent = item.icon
             const isActive = location.pathname === item.path || activeNav === item.id
             const isLogout = item.id === 'logout'
-            
+
             return (
-              <li 
-                key={item.id} 
+              <li
+                key={item.id}
                 className={`nav-item ${isActive ? 'active' : ''}`}
                 onClick={async () => {
                   if (isLogout) {

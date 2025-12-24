@@ -9,7 +9,7 @@ import styled from 'styled-components'
 import { Check, X, MessageCircle, Calendar, MapPin, DollarSign, User, Clock, Loader, RefreshCw } from 'lucide-react'
 
 function ArtistRequestsPage() {
-  const { profile } = useAuth()
+  const { } = useAuth()
   const [activeNav, setActiveNav] = useState('solicitacoes')
   const [bookings, setBookings] = useState<Booking[]>([])
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)

@@ -52,7 +52,15 @@ export const songService = {
 
         // The API returns { songs: [...] }
         const apiSongs = response.data.songs || [];
-        return apiSongs.map(mapApiSongToPlayerSong);
+
+        // Filter out broken/hidden tracks and ensure source exists
+        const filteredApiSongs = apiSongs.filter(s =>
+            s.title !== "Hidden Track" &&
+            s.title !== "Searchable Hit" &&
+            s.file_url // Must have a source link
+        );
+
+        return filteredApiSongs.map(mapApiSongToPlayerSong);
     },
 
     /**
