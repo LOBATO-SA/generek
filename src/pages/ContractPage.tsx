@@ -2,70 +2,114 @@ import './Page.css'
 import Sidebar from '../components/Sidebar'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle, Plus } from 'lucide-react'
-
-interface Booking {
-  id: string
-  artistId: string
-  artistName: string
-  artistAvatar: string
-  eventType: string
-  eventDate: string
-  eventTime: string
-  duration: string
-  location: string
-  notes: string
-  status: 'pending' | 'confirmed' | 'cancelled'
-  totalPrice: number
-  createdAt: string
-}
+import { Calendar, Clock, MapPin, CheckCircle, XCircle, Plus, Loader, AlertCircle, ThumbsUp, ThumbsDown, DollarSign } from 'lucide-react'
+import type { Booking } from '../types'
+import type { BookingStatus } from '../types'
+import { bookingService } from '../services/bookingService'
+import { useAuth } from '../contexts/AuthContext'
 
 function ContractPage() {
+  const { profile } = useAuth()
+  const isArtist = profile?.user_type === 'artist'
+
   const [activeNav, setActiveNav] = useState('contract')
   const [bookings, setBookings] = useState<Booking[]>([])
-  const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Carregar contratações do localStorage
-    const savedBookings = localStorage.getItem('bookings')
-    if (savedBookings) {
-      setBookings(JSON.parse(savedBookings))
+  const statusOptions: { label: string; value: 'all' | BookingStatus }[] = [
+    { label: 'Todas', value: 'all' },
+    { label: 'Aguardando Confirmação', value: 'waiting_confirmation' },
+    { label: 'Aguardando Pagamento', value: 'waiting_payment' },
+    { label: 'Aguardando Confirmação Final', value: 'waiting_final_confirmation' },
+    { label: 'Concluídas', value: 'completed' },
+    { label: 'Canceladas', value: 'cancelled' },
+  ]
+  const [filter, setFilter] = useState<'all' | BookingStatus>('all')
+
+  const fetchBookings = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      // The role parameter is currently unused in the service but good for semantics
+      const data = await bookingService.getMyBookings(isArtist ? 'artist' : 'listener')
+      console.log('📦 Bookings fetched:', data)
+      setBookings(data)
+    } catch (err) {
+      console.error('Error fetching bookings:', err)
+      setError('Erro ao carregar contratações.')
+    } finally {
+      setLoading(false)
     }
-  }, [])
-
-
-  const updateStatus = (id: string, status: 'pending' | 'confirmed' | 'cancelled') => {
-    const updatedBookings = bookings.map(b => 
-      b.id === id ? { ...b, status } : b
-    )
-    setBookings(updatedBookings)
-    localStorage.setItem('bookings', JSON.stringify(updatedBookings))
   }
 
-  const filteredBookings = bookings.filter(b => 
+  useEffect(() => {
+    fetchBookings()
+  }, [isArtist])
+
+  const filteredBookings = bookings.filter(b =>
     filter === 'all' || b.status === filter
   )
 
-  const getStatusIcon = (status: string) => {
+  function getStatusText(status: BookingStatus | 'all') {
     switch (status) {
-      case 'confirmed':
+      case 'waiting_confirmation': return 'Aguardando Confirmação'
+      case 'waiting_payment': return 'Aguardando Pagamento'
+      case 'waiting_final_confirmation': return 'Aguardando Confirmação Final'
+      case 'confirmed_by_artist': return 'Confirmado pelo Artista'
+      case 'paid': return 'Pago'
+      case 'completed': return 'Concluída'
+      case 'cancelled': return 'Cancelada'
+      case 'all': return 'Todas'
+      default: return status
+    }
+  }
+
+  function getStatusIcon(status: BookingStatus) {
+    switch (status) {
+      case 'completed':
         return <CheckCircle size={18} className="status-icon confirmed" />
       case 'cancelled':
         return <XCircle size={18} className="status-icon cancelled" />
       default:
-        return <AlertCircle size={18} className="status-icon pending" />
+        return <Clock size={18} className="status-icon pending" />
     }
   }
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return 'Confirmado'
-      case 'cancelled':
-        return 'Cancelado'
-      default:
-        return 'Pendente'
+  // Booking Actions
+  const handleAction = async (actionFn: () => Promise<any>, bookingId: string) => {
+    setActionLoading(bookingId)
+    try {
+      await actionFn()
+      // Refresh list
+      await fetchBookings()
+    } catch (err) {
+      console.error(`Error performing action on booking ${bookingId}:`, err)
+      alert("Erro ao realizar ação. Tente novamente.")
+    } finally {
+      setActionLoading(null)
     }
+  }
+
+  // Listener Actions
+  const handlePay = (id: string) => handleAction(() => bookingService.payBooking(id), id)
+  const handleFinalConfirm = (id: string) => handleAction(() => bookingService.confirmFinal(id), id)
+  const handleCancel = (id: string) => handleAction(() => bookingService.cancelBooking(id), id)
+
+  // Artist Actions
+  const handleArtistAccept = (id: string) => handleAction(() => bookingService.acceptBooking(id), id)
+  const handleArtistReject = (id: string) => handleAction(() => bookingService.rejectBooking(id), id)
+
+  if (loading) {
+    return (
+      <div className="page-container">
+        <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
+        <main className="page-content center-content">
+          <Loader size={48} className="animate-spin" />
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -75,42 +119,39 @@ function ContractPage() {
         <div className="page-header">
           <div className="header-content">
             <div>
-              <h1>Minhas Contratações</h1>
-              <p>Gerencie suas solicitações de contratação de artistas</p>
+              <h1>{isArtist ? 'Solicitações de Shows' : 'Minhas Contratações'}</h1>
+              <p>{isArtist
+                ? 'Gerencie as solicitações de shows recebidas'
+                : 'Gerencie suas solicitações de contratação de artistas'
+              }</p>
             </div>
-            <Link to="/artists" className="new-booking-btn">
-              <Plus size={20} />
-              Nova Contratação
-            </Link>
+            {!isArtist && (
+              <Link to="/artists" className="new-booking-btn">
+                <Plus size={20} />
+                Nova Contratação
+              </Link>
+            )}
           </div>
         </div>
 
+        {error && (
+          <div className="error-banner">
+            <AlertCircle size={20} />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="bookings-filters">
-          <button 
-            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            Todas ({bookings.length})
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'pending' ? 'active' : ''}`}
-            onClick={() => setFilter('pending')}
-          >
-            Pendentes ({bookings.filter(b => b.status === 'pending').length})
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'confirmed' ? 'active' : ''}`}
-            onClick={() => setFilter('confirmed')}
-          >
-            Confirmadas ({bookings.filter(b => b.status === 'confirmed').length})
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'cancelled' ? 'active' : ''}`}
-            onClick={() => setFilter('cancelled')}
-          >
-            Canceladas ({bookings.filter(b => b.status === 'cancelled').length})
-          </button>
+          {statusOptions.map(opt => (
+            <button
+              key={opt.value}
+              className={`filter-btn ${filter === opt.value ? 'active' : ''}`}
+              onClick={() => setFilter(opt.value)}
+            >
+              {opt.label} ({opt.value === 'all' ? bookings.length : bookings.filter(b => b.status === opt.value).length})
+            </button>
+          ))}
         </div>
 
         {/* Bookings List */}
@@ -120,94 +161,153 @@ function ContractPage() {
               <Calendar size={64} />
               <h3>Nenhuma contratação encontrada</h3>
               <p>
-                {filter === 'all' 
-                  ? 'Você ainda não fez nenhuma solicitação de contratação.'
+                {filter === 'all'
+                  ? (isArtist ? 'Você ainda não recebeu nenhuma solicitação.' : 'Você ainda não fez nenhuma contratação.')
                   : `Não há contratações com status "${getStatusText(filter)}".`}
               </p>
-              <Link to="/artists" className="empty-state-btn">
-                <Plus size={18} />
-                Contratar um Artista
-              </Link>
+              {!isArtist && (
+                <Link to="/artists" className="empty-state-btn">
+                  <Plus size={18} />
+                  Contratar um Artista
+                </Link>
+              )}
             </div>
           ) : (
             <div className="bookings-grid">
-              {filteredBookings.map((booking) => (
-                <div key={booking.id} className={`booking-card status-${booking.status}`}>
-                  <div className="booking-header">
-                    <div className="artist-info-small">
-                      <img src={booking.artistAvatar} alt={booking.artistName} />
-                      <div>
-                        <h3>{booking.artistName}</h3>
-                        <p>{booking.eventType}</p>
+              {filteredBookings.map((booking) => {
+                // Determine who to show: If I'm artist, show Listener. If I'm Listener, show Artist.
+                const otherPartyName = isArtist ? booking.listener_name : booking.artist_name;
+                const otherPartyAvatar = isArtist ? booking.listener_avatar : booking.artist_avatar;
+                // Since generic listener avatar might be empty, handle reasonable fallback
+                const displayAvatar = otherPartyAvatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=150&h=150';
+
+                return (
+                  <div key={booking.id} className={`booking-card status-${booking.status}`}>
+                    <div className="booking-header">
+                      <div className="artist-info-small">
+                        <img
+                          src={displayAvatar}
+                          alt={otherPartyName}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=150&h=150';
+                          }}
+                        />
+                        <div>
+                          <h3>{otherPartyName}</h3>
+                          <p>{booking.event_type}</p>
+                        </div>
+                      </div>
+                      <div className="booking-status">
+                        {getStatusIcon(booking.status)}
+                        <span>{getStatusText(booking.status)}</span>
                       </div>
                     </div>
-                    <div className="booking-status">
-                      {getStatusIcon(booking.status)}
-                      <span>{getStatusText(booking.status)}</span>
+
+                    <div className="booking-details">
+                      <div className="detail-row">
+                        <Calendar size={16} />
+                        <span>
+                          {(() => {
+                            const dateStr = booking.event_date;
+                            const finalDateStr = dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`;
+                            const dateObj = new Date(finalDateStr);
+                            return !isNaN(dateObj.getTime())
+                              ? dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+                              : 'Data inválida';
+                          })()}
+                          {booking.event_time && ` às ${booking.event_time}`}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <Clock size={16} />
+                        <span>{booking.duration_hours} horas</span>
+                      </div>
+                      <div className="detail-row">
+                        <MapPin size={16} />
+                        <span>{booking.location}</span>
+                      </div>
+                    </div>
+
+                    {booking.notes && (
+                      <div className="booking-notes">
+                        <strong>Observações:</strong>
+                        <p>{booking.notes}</p>
+                      </div>
+                    )}
+
+                    <div className="booking-footer">
+                      <div className="booking-price">
+                        <span>Total:</span>
+                        <strong>KZ {(booking.total_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                      </div>
+
+                      <div className="booking-actions">
+                        {actionLoading === booking.id && <Loader size={16} className="animate-spin" />}
+
+                        {/* Status Logic for Actions */}
+
+                        {/* 1. Waiting Confirmation */}
+                        {booking.status === 'waiting_confirmation' && (
+                          <>
+                            {isArtist ? (
+                              <>
+                                <button className="action-btn confirm" onClick={() => handleArtistAccept(booking.id)} disabled={!!actionLoading} title="Aceitar">
+                                  <ThumbsUp size={18} />
+                                </button>
+                                <button className="action-btn cancel" onClick={() => handleArtistReject(booking.id)} disabled={!!actionLoading} title="Rejeitar">
+                                  <ThumbsDown size={18} />
+                                </button>
+                              </>
+                            ) : (
+                              <button className="action-btn cancel" onClick={() => handleCancel(booking.id)} disabled={!!actionLoading} title="Cancelar">
+                                <XCircle size={18} />
+                              </button>
+                            )}
+                          </>
+                        )}
+
+                        {/* 2. Waiting Payment */}
+                        {booking.status === 'waiting_payment' && (
+                          <>
+                            {!isArtist && !booking.payment_done && (
+                              <button className="action-btn confirm" onClick={() => handlePay(booking.id)} disabled={!!actionLoading} title="Pagar">
+                                <DollarSign size={18} />
+                              </button>
+                            )}
+                            <button className="action-btn cancel" onClick={() => handleCancel(booking.id)} disabled={!!actionLoading} title="Cancelar">
+                              <XCircle size={18} />
+                            </button>
+                          </>
+                        )}
+
+                        {/* 3. Final Confirmation */}
+                        {booking.status === 'waiting_final_confirmation' && (
+                          <>
+                            {/* Listener needs to confirm */}
+                            {!isArtist && !booking.listener_final_confirmed && (
+                              <button className="action-btn confirm" onClick={() => handleFinalConfirm(booking.id)} disabled={!!actionLoading} title="Confirmar Final">
+                                <CheckCircle size={18} />
+                              </button>
+                            )}
+                            {/* Artist needs to confirm too? Usually final confirmation is mutual or listener-driven after payment */}
+                            {isArtist && !booking.artist_confirmed && (
+                              <button className="action-btn confirm" onClick={() => handleFinalConfirm(booking.id)} disabled={!!actionLoading} title="Confirmar Final">
+                                <CheckCircle size={18} />
+                              </button>
+                            )}
+                          </>
+                        )}
+
+                      </div>
+                    </div>
+
+                    <div className="booking-date-created">
+                      Criado em {new Date(booking.created_at).toLocaleDateString('pt-BR')}
                     </div>
                   </div>
-
-                  <div className="booking-details">
-                    <div className="detail-row">
-                      <Calendar size={16} />
-                      <span>
-                        {new Date(booking.eventDate + 'T00:00:00').toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: 'long',
-                          year: 'numeric'
-                        })}
-                        {booking.eventTime && ` às ${booking.eventTime}`}
-                      </span>
-                    </div>
-                    <div className="detail-row">
-                      <Clock size={16} />
-                      <span>{booking.duration} horas</span>
-                    </div>
-                    <div className="detail-row">
-                      <MapPin size={16} />
-                      <span>{booking.location}</span>
-                    </div>
-                  </div>
-
-                  {booking.notes && (
-                    <div className="booking-notes">
-                      <strong>Observações:</strong>
-                      <p>{booking.notes}</p>
-                    </div>
-                  )}
-
-                  <div className="booking-footer">
-                    <div className="booking-price">
-                      <span>Total:</span>
-                      <strong>KZ {booking.totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
-                    </div>
-                    <div className="booking-actions">
-                      {booking.status === 'pending' && (
-                        <>
-                          <button 
-                            className="action-btn confirm"
-                            onClick={() => updateStatus(booking.id, 'confirmed')}
-                            title="Confirmar"
-                          >
-                            <CheckCircle size={18} />
-                          </button>
-                          <button 
-                            className="action-btn cancel"
-                            onClick={() => updateStatus(booking.id, 'cancelled')}
-                            title="Cancelar"
-                          >
-                            <XCircle size={18} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="booking-date-created">
-                    Criado em {new Date(booking.createdAt).toLocaleDateString('pt-BR')}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

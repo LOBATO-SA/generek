@@ -1,149 +1,23 @@
 import './ArtistProfilePage.css'
 import Sidebar from '../components/Sidebar'
 import GlobalMusicPlayer from '../components/GlobalMusicPlayer'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, MapPin, DollarSign, Star, CheckCircle, Play, Calendar, Briefcase, Instagram, Facebook, Heart } from 'lucide-react'
+import { ArrowLeft, MapPin, DollarSign, Star, CheckCircle, Play, Calendar, Briefcase, Instagram, Facebook, Heart, Loader } from 'lucide-react'
 import { useMusicPlayer } from '../contexts/MusicPlayerContext'
 import type { Song } from '../contexts/MusicPlayerContext'
+import type { Artist } from '../types'
+import { artistService } from '../services/artistService'
 
-interface Artist {
-  id: string
-  name: string
-  avatar_url: string
-  verified: boolean
-  hourly_rate: number
-  genre: string
-  location: string
-  rating: number
-  total_bookings: number
-  bio: string
-  about: string
-  available_events: string[]
-  experience: string
-  instagram?: string
-  facebook?: string
-}
+// Extended interface for frontend display if needed, or straight from types
+// Assuming API returns songs inside the artist object or we fetch them separately.
+// The previous mock had 'artistSongs' separate. Ideally, the backend Artist DTO has 'top_songs'.
+// Let's assume the backend provides 'top_songs' or 'songs' based on the plan.
+// If strictly following the provided implementation plan, we just use getArtistById.
+// I'll add a 'songs' field to the Artist type locally if it's missing in the global type validation or assume we get it.
 
-interface ArtistSong extends Song {
-  id: string
-  plays: number
-}
-
-const mockArtists: Record<string, Artist> = {
-  '1': {
-    id: '1',
-    name: 'Ana Silva',
-    avatar_url: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/398875d0-9b9e-494a-8906-210aa3f777e0',
-    verified: true,
-    hourly_rate: 2500,
-    genre: 'Jazz',
-    location: 'São Paulo, SP',
-    rating: 4.9,
-    total_bookings: 127,
-    bio: 'Cantora profissional com mais de 10 anos de experiência',
-    about: 'Ana Silva é uma cantora renomada de jazz com mais de 10 anos de carreira. Especializada em eventos corporativos, casamentos e festas exclusivas. Seu repertório inclui clássicos do jazz, bossa nova e MPB.',
-    available_events: ['Festas', 'Casamentos', 'Corporativos'],
-    experience: '10+ anos de carreira',
-    instagram: '@anasilvamusic',
-    facebook: 'AnaSilvaOficial'
-  },
-  '2': {
-    id: '2',
-    name: 'DJ Thunder',
-    avatar_url: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/810d1ddc-1168-4990-8d43-a0ffee21fb8c',
-    verified: true,
-    hourly_rate: 3500,
-    genre: 'Eletrônica',
-    location: 'Rio de Janeiro, RJ',
-    rating: 4.8,
-    total_bookings: 89,
-    bio: 'DJ especializado em festas e eventos corporativos',
-    about: 'DJ Thunder traz energia e profissionalismo para qualquer evento. Com experiência em grandes festas e eventos corporativos, garante uma noite inesquecível com o melhor da música eletrônica.',
-    available_events: ['Festas', 'Baladas', 'Eventos'],
-    experience: '8+ anos de carreira',
-    instagram: '@djthunder',
-    facebook: 'DJThunderOficial'
-  },
-  '3': {
-    id: '3',
-    name: 'Carlos Mendes',
-    avatar_url: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/7bd23b84-d9b0-4604-a7e3-872157a37b61',
-    verified: false,
-    hourly_rate: 1800,
-    genre: 'MPB',
-    location: 'Belo Horizonte, MG',
-    rating: 4.7,
-    total_bookings: 45,
-    bio: 'Violonista e cantor de MPB',
-    about: 'Carlos Mendes é um talentoso violonista e cantor de MPB. Seu repertório inclui grandes clássicos da música brasileira, ideal para eventos intimistas e sofisticados.',
-    available_events: ['Casamentos', 'Eventos intimistas'],
-    experience: '5+ anos de carreira',
-    instagram: '@carlosmendesmpb'
-  }
-} 
-
-const artistSongs: Record<string, ArtistSong[]> = {
-  '1': [
-    {
-      id: '1',
-      title: 'Fly Me to the Moon',
-      artist: 'Ana Silva',
-      duration: '3:45',
-      cover: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/398875d0-9b9e-494a-8906-210aa3f777e0',
-      source: 'https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/Besomorph-Coopex-Redemption.mp3',
-      plays: 15420
-    },
-    {
-      id: '2',
-      title: 'Garota de Ipanema',
-      artist: 'Ana Silva',
-      duration: '4:12',
-      cover: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/398875d0-9b9e-494a-8906-210aa3f777e0',
-      source: 'https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/OSKI-Whats-The-Problem.mp3',
-      plays: 12340
-    },
-    {
-      id: '3',
-      title: 'Summertime',
-      artist: 'Ana Silva',
-      duration: '3:58',
-      cover: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/398875d0-9b9e-494a-8906-210aa3f777e0',
-      source: 'https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/Unknown-BrainxRival-Control.mp3',
-      plays: 9870
-    }
-  ],
-  '2': [
-    {
-      id: '1',
-      title: 'Electric Dreams',
-      artist: 'DJ Thunder',
-      duration: '5:23',
-      cover: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/810d1ddc-1168-4990-8d43-a0ffee21fb8c',
-      source: 'https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/Besomorph-Coopex-Redemption.mp3',
-      plays: 28500
-    },
-    {
-      id: '2',
-      title: 'Midnight Pulse',
-      artist: 'DJ Thunder',
-      duration: '6:15',
-      cover: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/810d1ddc-1168-4990-8d43-a0ffee21fb8c',
-      source: 'https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/OSKI-Whats-The-Problem.mp3',
-      plays: 21300
-    }
-  ],
-  '3': [
-    {
-      id: '1',
-      title: 'Chega de Saudade',
-      artist: 'Carlos Mendes',
-      duration: '4:05',
-      cover: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/7bd23b84-d9b0-4604-a7e3-872157a37b61',
-      source: 'https://github.com/ecemgo/mini-samples-great-tricks/raw/main/song-list/Besomorph-Coopex-Redemption.mp3',
-      plays: 8900
-    }
-  ]
+interface ArtistWithSongs extends Artist {
+  songs?: any[] // Todo: Define strict song type from backend
 }
 
 function ArtistProfilePage() {
@@ -151,60 +25,95 @@ function ArtistProfilePage() {
   const [activeNav, setActiveNav] = useState('artists')
   const { playSong, isLiked, toggleLike } = useMusicPlayer()
 
-  const artist = id ? mockArtists[id] : null
-  const songs = id ? artistSongs[id] || [] : []
+  const [artist, setArtist] = useState<ArtistWithSongs | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchArtist = async () => {
+      if (!id) return
+      setLoading(true)
+      try {
+        const data = await artistService.getArtistById(id)
+        setArtist(data)
+      } catch (err) {
+        console.error('Error fetching artist:', err)
+        setError('Erro ao carregar perfil do artista.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchArtist()
+  }, [id])
+
+  // Helper to map backend song to player song
+  // Assuming backend returns songs in a property, e.g., 'songs' or we mock it if missing for now purely to avoid crash
+  // The guide said: "top_songs (últimas 5 músicas)"
+  const songs = (artist as any)?.top_songs || []
 
   const handlePlaySong = (index: number) => {
     const song = songs[index]
     if (song) {
-      // Converter ArtistSong para Song (removendo campos extras)
       const songForPlayer: Song = {
         title: song.title,
-        artist: song.artist,
-        duration: song.duration,
-        cover: song.cover,
-        source: song.source
+        artist: artist?.name || 'Unknown',
+        duration: song.duration, // format "MM:SS" ??
+        cover: song.cover_url || artist?.avatar_url || '',
+        source: song.file_url
       }
-      const playlistForPlayer: Song[] = songs.map(s => ({
+
+      const playlistForPlayer: Song[] = songs.map((s: any) => ({
         title: s.title,
-        artist: s.artist,
+        artist: artist?.name || 'Unknown',
         duration: s.duration,
-        cover: s.cover,
-        source: s.source
+        cover: s.cover_url || artist?.avatar_url || '',
+        source: s.file_url
       }))
+
       playSong(songForPlayer, playlistForPlayer)
     }
   }
 
-  const handleToggleLike = (song: ArtistSong) => {
+  const handleToggleLike = (song: any) => {
     const songForContext: Song = {
       title: song.title,
-      artist: song.artist,
+      artist: artist?.name || 'Unknown',
       duration: song.duration,
-      cover: song.cover,
-      source: song.source
+      cover: song.cover_url || artist?.avatar_url || '',
+      source: song.file_url
     }
     toggleLike(songForContext)
   }
 
-  const checkIsLiked = (song: ArtistSong) => {
+  const checkIsLiked = (song: any) => {
     const songForContext: Song = {
       title: song.title,
-      artist: song.artist,
+      artist: artist?.name || 'Unknown',
       duration: song.duration,
-      cover: song.cover,
-      source: song.source
+      cover: song.cover_url || artist?.avatar_url || '',
+      source: song.file_url
     }
     return isLiked(songForContext)
   }
 
-  if (!artist) {
+  if (loading) {
+    return (
+      <div className="page-container">
+        <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
+        <main className="page-content center-content">
+          <Loader size={48} className="animate-spin" />
+        </main>
+      </div>
+    )
+  }
+
+  if (error || !artist) {
     return (
       <div className="page-container">
         <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
         <main className="page-content">
           <div className="error-message">
-            <h2>Artista não encontrado</h2>
+            <h2>{error || 'Artista não encontrado'}</h2>
             <Link to="/artists" className="back-button">
               <ArrowLeft size={20} />
               Voltar para Artistas
@@ -218,7 +127,7 @@ function ArtistProfilePage() {
   return (
     <div className="page-container">
       <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
-      
+
       <main className="page-content artist-profile-layout">
         <div className="artist-content-main">
           {/* Back Button */}
@@ -241,7 +150,7 @@ function ArtistProfilePage() {
             <div className="artist-main-info">
               <h1>{artist.name}</h1>
               <p className="artist-genre">{artist.genre}</p>
-              
+
               <div className="artist-stats">
                 <div className="stat">
                   <Star size={18} fill="currentColor" />
@@ -267,16 +176,17 @@ function ArtistProfilePage() {
           {/* About Section */}
           <div className="section-card">
             <h2>Sobre</h2>
-            <p>{artist.about}</p>
+            <p>{artist.about || artist.bio}</p>
           </div>
 
           {/* Popular Songs */}
           <div className="section-card">
             <h2>Músicas Populares</h2>
             <div className="songs-list">
-              {songs.map((song, index) => (
-                <div 
-                  key={song.id} 
+              {songs.length === 0 && <p>Nenhuma música disponível.</p>}
+              {songs.map((song: any, index: number) => (
+                <div
+                  key={song.id || index}
                   className="song-item"
                   onClick={() => handlePlaySong(index)}
                 >
@@ -284,7 +194,7 @@ function ArtistProfilePage() {
                     <Play size={16} fill="currentColor" />
                   </div>
                   <div className="song-cover-small">
-                    <img src={song.cover} alt={song.title} />
+                    <img src={song.cover_url || artist.avatar_url} alt={song.title} />
                     <button
                       className="like-btn-overlay"
                       onClick={(e) => { e.stopPropagation(); handleToggleLike(song) }}
@@ -295,10 +205,10 @@ function ArtistProfilePage() {
                   </div>
                   <div className="song-details">
                     <h4>{song.title}</h4>
-                    <p>{song.artist}</p>
+                    <p>{artist.name}</p>
                   </div>
                   <div className="song-plays">
-                    {song.plays.toLocaleString('pt-BR')} plays
+                    {song.plays ? song.plays.toLocaleString('pt-BR') + ' plays' : ''}
                   </div>
                   <div className="song-duration">
                     {song.duration}
@@ -335,7 +245,7 @@ function ArtistProfilePage() {
         <aside className="artist-sidebar">
           <div className="sidebar-card">
             <h3>Contrate este Artista</h3>
-            
+
             <div className="sidebar-price">
               <span className="price-label">A partir de</span>
               <div className="price-value">
@@ -347,46 +257,50 @@ function ArtistProfilePage() {
 
             <div className="sidebar-divider"></div>
 
-            <div className="sidebar-section">
-              <h4>Eventos Disponíveis</h4>
-              <div className="tags-list">
-                {artist.available_events.map((event, index) => (
-                  <span key={index} className="tag">{event}</span>
-                ))}
+            {artist.available_events && (
+              <div className="sidebar-section">
+                <h4>Eventos Disponíveis</h4>
+                <div className="tags-list">
+                  {artist.available_events.map((event, index) => (
+                    <span key={index} className="tag">{event}</span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="sidebar-section">
               <h4><MapPin size={18} /> Localização</h4>
               <p>{artist.location}</p>
             </div>
 
-            <div className="sidebar-section">
-              <h4><Briefcase size={18} /> Experiência</h4>
-              <p>{artist.experience}</p>
-            </div>
+            {artist.experience && (
+              <div className="sidebar-section">
+                <h4><Briefcase size={18} /> Experiência</h4>
+                <p>{artist.experience}</p>
+              </div>
+            )}
 
             <Link to={`/booking?artist=${artist.id}`} className="sidebar-hire-button">
               <Calendar size={20} />
               Solicitar Contratação
             </Link>
 
-            {(artist.instagram || artist.facebook) && (
+            {(artist.social_media?.instagram || artist.social_media?.facebook) && (
               <>
                 <div className="sidebar-divider"></div>
                 <div className="sidebar-section">
                   <h4>Redes Sociais</h4>
                   <div className="social-links">
-                    {artist.instagram && (
-                      <a href={`https://instagram.com/${artist.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">
+                    {artist.social_media.instagram && (
+                      <a href={`https://instagram.com/${artist.social_media.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">
                         <Instagram size={18} />
-                        {artist.instagram}
+                        {artist.social_media.instagram}
                       </a>
                     )}
-                    {artist.facebook && (
-                      <a href={`https://facebook.com/${artist.facebook}`} target="_blank" rel="noopener noreferrer" className="social-link">
+                    {artist.social_media.facebook && (
+                      <a href={`https://facebook.com/${artist.social_media.facebook}`} target="_blank" rel="noopener noreferrer" className="social-link">
                         <Facebook size={18} />
-                        {artist.facebook}
+                        {artist.social_media.facebook}
                       </a>
                     )}
                   </div>

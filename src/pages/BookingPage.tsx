@@ -1,46 +1,25 @@
 import './BookingPage.css'
 import Sidebar from '../components/Sidebar'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import type { Artist } from '../types'
+import { useAuth } from '../contexts/AuthContext'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, CheckCircle, X, PartyPopper } from 'lucide-react'
-
-interface Artist {
-  id: string
-  name: string
-  avatar_url: string
-  verified: boolean
-  hourly_rate: number
-}
-
-const mockArtists: Record<string, Artist> = {
-  '1': {
-    id: '1',
-    name: 'Ana Silva',
-    avatar_url: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/398875d0-9b9e-494a-8906-210aa3f777e0',
-    verified: true,
-    hourly_rate: 2500
-  },
-  '2': {
-    id: '2',
-    name: 'DJ Thunder',
-    avatar_url: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/810d1ddc-1168-4990-8d43-a0ffee21fb8c',
-    verified: true,
-    hourly_rate: 3500
-  },
-  '3': {
-    id: '3',
-    name: 'Carlos Mendes',
-    avatar_url: 'https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/7bd23b84-d9b0-4604-a7e3-872157a37b61',
-    verified: false,
-    hourly_rate: 1800
-  }
-}
+import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, CheckCircle, X, PartyPopper, Loader, AlertCircle } from 'lucide-react'
+import { artistService } from '../services/artistService'
+import { bookingService } from '../services/bookingService'
 
 function BookingPage() {
+  const { profile } = useAuth()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const artistId = searchParams.get('artist') || '1'
-  const artist = mockArtists[artistId]
+  const artistId = searchParams.get('artist')
+
+  // State
+  const [artist, setArtist] = useState<Artist | null>(null)
+  const [loadingArtist, setLoadingArtist] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   const [formData, setFormData] = useState({
     eventDate: '',
@@ -51,44 +30,61 @@ function BookingPage() {
     notes: ''
   })
 
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  // Fetch Artist Data
+  useEffect(() => {
+    const fetchArtist = async () => {
+      if (!artistId) {
+        setLoadingArtist(false)
+        return
+      }
+      try {
+        const data = await artistService.getArtistById(artistId)
+        setArtist(data)
+      } catch (err) {
+        console.error('Error fetching artist:', err)
+        setError('Não foi possível carregar os dados do artista.')
+      } finally {
+        setLoadingArtist(false)
+      }
+    }
+    fetchArtist()
+  }, [artistId])
 
   const calculateTotal = () => {
     if (!artist?.hourly_rate || !formData.duration) return 0
     return artist.hourly_rate * parseInt(formData.duration)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Criar nova contratação
-    const newBooking = {
-      id: Date.now().toString(),
-      artistId: artist.id,
-      artistName: artist.name,
-      artistAvatar: artist.avatar_url,
-      eventType: formData.eventType,
-      eventDate: formData.eventDate,
-      eventTime: formData.eventTime,
-      duration: formData.duration,
-      location: formData.location,
-      notes: formData.notes,
-      status: 'pending' as const,
-      totalPrice: calculateTotal(),
-      createdAt: new Date().toISOString()
+    if (!profile || !artist) return
+
+    setSubmitting(true)
+    setError(null)
+
+    try {
+      await bookingService.createBooking({
+        artist_id: artist.id,
+        event_type: formData.eventType,
+        event_date: formData.eventDate,
+        event_time: formData.eventTime,
+        duration_hours: parseInt(formData.duration),
+        location: formData.location,
+        notes: formData.notes
+      })
+
+      setShowSuccessModal(true)
+    } catch (err: any) {
+      console.error('Error creating booking:', err)
+      setError(err.response?.data?.message || 'Erro ao criar solicitação. Tente novamente.')
+    } finally {
+      setSubmitting(false)
     }
-
-    // Salvar no localStorage
-    const existingBookings = localStorage.getItem('bookings')
-    const bookings = existingBookings ? JSON.parse(existingBookings) : []
-    bookings.push(newBooking)
-    localStorage.setItem('bookings', JSON.stringify(bookings))
-
-    setShowSuccessModal(true)
   }
 
   const handleCloseModal = () => {
     setShowSuccessModal(false)
+    // Redirect to a "My Bookings" page or Contract page
     navigate('/contract')
   }
 
@@ -96,13 +92,24 @@ function BookingPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  if (!artist) {
+  if (loadingArtist) {
+    return (
+      <div className="page-container">
+        <Sidebar activeNav="contract" />
+        <main className="page-content center-content">
+          <Loader size={48} className="animate-spin" />
+        </main>
+      </div>
+    )
+  }
+
+  if (!artist || !artistId) {
     return (
       <div className="page-container">
         <Sidebar activeNav="contract" />
         <main className="page-content">
           <div className="error-message">
-            <h2>Artista não encontrado</h2>
+            <h2>{error || 'Artista não especificado'}</h2>
             <Link to="/artists" className="back-button">
               Voltar para Artistas
             </Link>
@@ -115,7 +122,7 @@ function BookingPage() {
   return (
     <div className="page-container">
       <Sidebar activeNav="contract" />
-      
+
       <main className="page-content">
         {/* Header */}
         <div className="booking-header">
@@ -126,6 +133,13 @@ function BookingPage() {
           <h1>Nova Contratação</h1>
           <p>Preencha os detalhes do seu evento</p>
         </div>
+
+        {error && (
+          <div className="error-banner">
+            <AlertCircle size={20} />
+            <span>{error}</span>
+          </div>
+        )}
 
         <div className="booking-layout">
           {/* Form */}
@@ -208,8 +222,12 @@ function BookingPage() {
               </div>
 
               <div className="form-footer">
-                <button type="submit" className="submit-button">
-                  Solicitar Contratação
+                <button
+                  type="submit"
+                  className="submit-button"
+                  disabled={submitting}
+                >
+                  {submitting ? 'Enviando...' : 'Solicitar Contratação'}
                 </button>
                 <p className="form-hint-center">
                   Você receberá uma confirmação por email
@@ -312,17 +330,17 @@ function BookingPage() {
               <button className="modal-close" onClick={handleCloseModal}>
                 <X size={24} />
               </button>
-              
+
               <div className="modal-icon">
                 <PartyPopper size={48} />
               </div>
-              
+
               <h2 className="modal-title">Solicitação Enviada!</h2>
-              
+
               <p className="modal-message">
                 A sua solicitação de contratação para <strong>{artist.name}</strong> foi enviada com sucesso!
               </p>
-              
+
               <div className="modal-details">
                 <div className="modal-detail-item">
                   <Calendar size={18} />
@@ -337,11 +355,11 @@ function BookingPage() {
                   <span>{formData.location}</span>
                 </div>
               </div>
-              
+
               <p className="modal-note">
                 Você receberá uma confirmação por email assim que o artista responder.
               </p>
-              
+
               <button className="modal-button" onClick={handleCloseModal}>
                 Ver Minhas Contratações
               </button>

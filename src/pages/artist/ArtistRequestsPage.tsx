@@ -1,118 +1,140 @@
 import '../Page.css'
 import Sidebar from '../../components/Sidebar'
 import GlobalMusicPlayer from '../../components/GlobalMusicPlayer'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import type { Booking, BookingStatus } from '../../types'
+import { bookingService } from '../../services/bookingService'
 import styled from 'styled-components'
-import { Check, X, MessageCircle, Calendar, MapPin, DollarSign, User, Clock } from 'lucide-react'
-
-type RequestStatus = 'pending' | 'accepted' | 'rejected'
-
-interface BookingRequest {
-  id: string
-  clientName: string
-  clientAvatar?: string
-  eventType: string
-  eventDate: string
-  location: string
-  budget: number
-  message: string
-  status: RequestStatus
-  createdAt: string
-}
-
-// Dados de exemplo
-const MOCK_REQUESTS: BookingRequest[] = [
-  {
-    id: '1',
-    clientName: 'João Silva',
-    eventType: 'Casamento',
-    eventDate: '2025-02-15',
-    location: 'São Paulo, SP',
-    budget: 2500,
-    message: 'Olá! Estou organizando meu casamento e adoraria ter você como atração principal. O evento será às 19h.',
-    status: 'pending',
-    createdAt: '2025-12-20T10:30:00Z'
-  },
-  {
-    id: '2',
-    clientName: 'Maria Santos',
-    eventType: 'Aniversário',
-    eventDate: '2025-01-28',
-    location: 'Rio de Janeiro, RJ',
-    budget: 1500,
-    message: 'Gostaria de contratar para o aniversário de 50 anos da minha mãe. Será uma festa íntima.',
-    status: 'pending',
-    createdAt: '2025-12-19T14:00:00Z'
-  },
-  {
-    id: '3',
-    clientName: 'Empresa ABC',
-    eventType: 'Festa Corporativa',
-    eventDate: '2025-03-10',
-    location: 'Belo Horizonte, MG',
-    budget: 5000,
-    message: 'Evento corporativo de confraternização. Aproximadamente 200 convidados.',
-    status: 'accepted',
-    createdAt: '2025-12-15T09:00:00Z'
-  }
-]
+import { Check, X, MessageCircle, Calendar, MapPin, DollarSign, User, Clock, Loader } from 'lucide-react'
 
 function ArtistRequestsPage() {
+  const { profile } = useAuth()
   const [activeNav, setActiveNav] = useState('solicitacoes')
-  useAuth() // Verificar autenticação
-  
-  const [requests, setRequests] = useState<BookingRequest[]>(MOCK_REQUESTS)
-  const [selectedRequest, setSelectedRequest] = useState<BookingRequest | null>(null)
-  const [filter, setFilter] = useState<'all' | RequestStatus>('all')
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [filter, setFilter] = useState<'all' | BookingStatus>('all')
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
   const [chatMessage, setChatMessage] = useState('')
+  const [loading, setLoading] = useState(true)
 
-  const filteredRequests = requests.filter(r => filter === 'all' || r.status === filter)
-
-  const handleAccept = async (id: string) => {
-    // TODO: Implementar chamada ao backend
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'accepted' as const } : r))
-    setMessage({ type: 'success', text: 'Solicitação aceita!' })
-    setSelectedRequest(null)
+  // Carregar bookings via API
+  const fetchBookings = async () => {
+    setLoading(true)
+    try {
+      const data = await bookingService.getMyBookings('artist')
+      setBookings(data)
+    } catch (error) {
+      console.error('Erro ao carregar solicitações:', error)
+      setMessage({ type: 'error', text: 'Erro ao carregar solicitações.' })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleReject = async (id: string) => {
-    // TODO: Implementar chamada ao backend
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected' as const } : r))
-    setMessage({ type: 'success', text: 'Solicitação recusada' })
-    setSelectedRequest(null)
+  useEffect(() => {
+    fetchBookings()
+  }, [])
+
+  const filteredBookings = bookings.filter(b => filter === 'all' || b.status === filter)
+
+  // Ação: artista confirma contratação
+  const handleArtistConfirm = async (id: string) => {
+    try {
+      await bookingService.acceptBooking(id)
+      setMessage({ type: 'success', text: 'Confirmação enviada!' })
+      fetchBookings() // Reload list
+      setSelectedBooking(null)
+    } catch (error) {
+      console.error('Erro ao confirmar:', error)
+      setMessage({ type: 'error', text: 'Erro ao confirmar solicitação.' })
+    }
+  }
+
+  // Ação: artista cancela/rejeita
+  const handleArtistCancel = async (id: string) => {
+    try {
+      // Se estiver aguardando confirmação, é um reject. Se estiver em outro estado, pode ser cancel.
+      // O endpoint rejectBooking deve ser usado para recusar inicial.
+      // O cancelBooking para cancelar depois.
+      // Vou assumir reject se waiting_confirmation, cancel caso contrário.
+      const booking = bookings.find(b => b.id === id)
+      if (booking && booking.status === 'waiting_confirmation') {
+        await bookingService.rejectBooking(id)
+      } else {
+        await bookingService.cancelBooking(id)
+      }
+
+      setMessage({ type: 'success', text: 'Solicitação cancelada/rejeitada.' })
+      fetchBookings()
+      setSelectedBooking(null)
+    } catch (error) {
+      console.error('Erro ao cancelar:', error)
+      setMessage({ type: 'error', text: 'Erro ao cancelar solicitação.' })
+    }
+  }
+
+  const handleArtistFinalConfirm = async (id: string) => {
+    try {
+      await bookingService.confirmFinal(id)
+      setMessage({ type: 'success', text: 'Finalização confirmada!' })
+      fetchBookings()
+      setSelectedBooking(null)
+    } catch (error) {
+      console.error('Erro ao finalizar:', error)
+      setMessage({ type: 'error', text: 'Erro ao confirmar finalização.' })
+    }
   }
 
   const handleSendMessage = () => {
     if (!chatMessage.trim()) return
     // TODO: Implementar envio de mensagem ao backend
-    console.log('Enviando mensagem:', chatMessage)
+    console.log('Enviando mensagem para booking', selectedBooking?.id, chatMessage)
     setChatMessage('')
     setMessage({ type: 'success', text: 'Mensagem enviada!' })
   }
 
-  const getStatusColor = (status: RequestStatus) => {
+
+  // Cores e labels para os novos estados
+  const getStatusColor = (status: BookingStatus) => {
     switch (status) {
-      case 'pending': return '#f0ad4e'
-      case 'accepted': return '#1db954'
-      case 'rejected': return '#ff4d4d'
+      case 'waiting_confirmation': return '#f0ad4e'
+      case 'waiting_payment': return '#007bff'
+      case 'waiting_final_confirmation': return '#f0ad4e'
+      case 'completed': return '#1db954'
+      case 'cancelled': return '#ff4d4d'
+      // case 'incomplete': return '#888'
+      default: return '#888'
+    }
+  }
+  const getStatusLabel = (status: BookingStatus) => {
+    switch (status) {
+      case 'waiting_confirmation': return 'Aguardando Confirmação'
+      case 'waiting_payment': return 'Aguardando Pagamento'
+      case 'waiting_final_confirmation': return 'Aguardando Confirmação Final'
+      case 'completed': return 'Concluída'
+      case 'cancelled': return 'Cancelada'
+      // case 'incomplete': return 'Incompleta'
+      default: return status
     }
   }
 
-  const getStatusLabel = (status: RequestStatus) => {
-    switch (status) {
-      case 'pending': return 'Pendente'
-      case 'accepted': return 'Aceito'
-      case 'rejected': return 'Recusado'
-    }
+  if (loading) {
+    return (
+      <div className="page-container">
+        <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
+        <main className="page-content center-content">
+          <Loader size={48} className="animate-spin" />
+        </main>
+      </div>
+    )
   }
 
   return (
     <div className="page-container">
       <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
-      
+
       <main className="page-content">
         <div className="page-header">
           <h1>Solicitações</h1>
@@ -129,51 +151,54 @@ function ArtistRequestsPage() {
               <FilterButton active={filter === 'all'} onClick={() => setFilter('all')}>
                 Todas
               </FilterButton>
-              <FilterButton active={filter === 'pending'} onClick={() => setFilter('pending')}>
-                Pendentes
-              </FilterButton>
-              <FilterButton active={filter === 'accepted'} onClick={() => setFilter('accepted')}>
-                Aceitas
-              </FilterButton>
-              <FilterButton active={filter === 'rejected'} onClick={() => setFilter('rejected')}>
-                Recusadas
-              </FilterButton>
+              {['waiting_confirmation', 'waiting_payment', 'waiting_final_confirmation', 'completed', 'cancelled'].map(st => (
+                <FilterButton key={st} active={filter === st} onClick={() => setFilter(st as BookingStatus)}>
+                  {getStatusLabel(st as BookingStatus)}
+                </FilterButton>
+              ))}
             </FilterSection>
 
-            {filteredRequests.length > 0 ? (
+            {filteredBookings.length > 0 ? (
               <RequestList>
-                {filteredRequests.map(request => (
-                  <RequestItem key={request.id} onClick={() => setSelectedRequest(request)}>
+                {filteredBookings.map(booking => (
+                  <RequestItem key={booking.id} onClick={() => setSelectedBooking(booking)}>
                     <RequestHeader>
                       <ClientInfo>
                         <ClientAvatar>
-                          {request.clientAvatar ? (
-                            <img src={request.clientAvatar} alt={request.clientName} />
+                          {booking.listener_avatar ? (
+                            <img src={booking.listener_avatar} alt={booking.listener_name} />
                           ) : (
                             <User size={20} />
                           )}
                         </ClientAvatar>
                         <div>
-                          <ClientName>{request.clientName}</ClientName>
-                          <EventType>{request.eventType}</EventType>
+                          <ClientName>{booking.listener_name || 'Cliente'}</ClientName>
+                          <EventType>{booking.event_type}</EventType>
                         </div>
                       </ClientInfo>
-                      <StatusBadge color={getStatusColor(request.status)}>
-                        {getStatusLabel(request.status)}
+                      <StatusBadge color={getStatusColor(booking.status)}>
+                        {getStatusLabel(booking.status)}
                       </StatusBadge>
                     </RequestHeader>
                     <RequestDetails>
                       <DetailItem>
                         <Calendar size={14} />
-                        {new Date(request.eventDate).toLocaleDateString('pt-BR')}
+                        {(() => {
+                          const dateStr = booking.event_date;
+                          const finalDateStr = dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`;
+                          const dateObj = new Date(finalDateStr);
+                          return !isNaN(dateObj.getTime())
+                            ? dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'numeric', year: 'numeric' })
+                            : 'Data inv.';
+                        })()}
                       </DetailItem>
                       <DetailItem>
                         <MapPin size={14} />
-                        {request.location}
+                        {booking.location}
                       </DetailItem>
                       <DetailItem>
                         <DollarSign size={14} />
-                        R$ {request.budget.toLocaleString('pt-BR')}
+                        KZ {booking.total_price.toLocaleString('pt-BR')}
                       </DetailItem>
                     </RequestDetails>
                   </RequestItem>
@@ -190,16 +215,16 @@ function ArtistRequestsPage() {
         </RequestsContainer>
 
         {/* Modal de Detalhes */}
-        {selectedRequest && (
-          <ModalOverlay onClick={() => setSelectedRequest(null)}>
+        {selectedBooking && (
+          <ModalOverlay onClick={() => setSelectedBooking(null)}>
             <Modal onClick={e => e.stopPropagation()}>
               <ModalHeader>
                 <div>
-                  <ModalTitle>{selectedRequest.clientName}</ModalTitle>
-                  <ModalSubtitle>{selectedRequest.eventType}</ModalSubtitle>
+                  <ModalTitle>{selectedBooking.listener_name || 'Detalhes do Evento'}</ModalTitle>
+                  <ModalSubtitle>{selectedBooking.event_type}</ModalSubtitle>
                 </div>
-                <StatusBadge color={getStatusColor(selectedRequest.status)}>
-                  {getStatusLabel(selectedRequest.status)}
+                <StatusBadge color={getStatusColor(selectedBooking.status)}>
+                  {getStatusLabel(selectedBooking.status)}
                 </StatusBadge>
               </ModalHeader>
 
@@ -209,44 +234,45 @@ function ArtistRequestsPage() {
                     <Calendar size={20} />
                     <div>
                       <DetailLabel>Data do Evento</DetailLabel>
-                      <DetailValue>{new Date(selectedRequest.eventDate).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: 'numeric'
-                      })}</DetailValue>
+                      <DetailValue>{(() => {
+                        const dateObj = new Date(selectedBooking.event_date.includes('T') ? selectedBooking.event_date : selectedBooking.event_date + 'T00:00:00');
+                        return !isNaN(dateObj.getTime())
+                          ? dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+                          : selectedBooking.event_date;
+                      })()}</DetailValue>
                     </div>
                   </DetailCard>
                   <DetailCard>
                     <MapPin size={20} />
                     <div>
                       <DetailLabel>Local</DetailLabel>
-                      <DetailValue>{selectedRequest.location}</DetailValue>
+                      <DetailValue>{selectedBooking.location}</DetailValue>
                     </div>
                   </DetailCard>
                   <DetailCard>
                     <DollarSign size={20} />
                     <div>
-                      <DetailLabel>Orçamento</DetailLabel>
-                      <DetailValue>R$ {selectedRequest.budget.toLocaleString('pt-BR')}</DetailValue>
+                      <DetailLabel>Valor Total</DetailLabel>
+                      <DetailValue>KZ {selectedBooking.total_price.toLocaleString('pt-BR')}</DetailValue>
                     </div>
                   </DetailCard>
                   <DetailCard>
                     <Clock size={20} />
                     <div>
                       <DetailLabel>Solicitado em</DetailLabel>
-                      <DetailValue>{new Date(selectedRequest.createdAt).toLocaleDateString('pt-BR')}</DetailValue>
+                      <DetailValue>{new Date(selectedBooking.created_at).toLocaleDateString('pt-BR')}</DetailValue>
                     </div>
                   </DetailCard>
                 </DetailGrid>
 
                 <MessageSection>
-                  <MessageLabel>Mensagem do Cliente</MessageLabel>
-                  <MessageBox>{selectedRequest.message}</MessageBox>
+                  <MessageLabel>Observações</MessageLabel>
+                  <MessageBox>{selectedBooking.notes || 'Nenhuma observação.'}</MessageBox>
                 </MessageSection>
 
                 {chatOpen && (
                   <ChatSection>
-                    <ChatInput 
+                    <ChatInput
                       placeholder="Digite sua mensagem..."
                       value={chatMessage}
                       onChange={e => setChatMessage(e.target.value)}
@@ -257,22 +283,40 @@ function ArtistRequestsPage() {
               </ModalBody>
 
               <ModalActions>
-                {selectedRequest.status === 'pending' ? (
+                {/* Exemplo: artista pode confirmar/cancelar se status for waiting_confirmation */}
+                {selectedBooking.status === 'waiting_confirmation' && !selectedBooking.artist_confirmed && (
                   <>
-                    <RejectButton onClick={() => handleReject(selectedRequest.id)}>
+                    <RejectButton onClick={() => handleArtistCancel(selectedBooking.id)}>
                       <X size={18} />
-                      Recusar
+                      Rejeitar
                     </RejectButton>
                     <ChatButton onClick={() => setChatOpen(!chatOpen)}>
                       <MessageCircle size={18} />
                       Mensagem
                     </ChatButton>
-                    <AcceptButton onClick={() => handleAccept(selectedRequest.id)}>
+                    <AcceptButton onClick={() => handleArtistConfirm(selectedBooking.id)}>
                       <Check size={18} />
                       Aceitar
                     </AcceptButton>
                   </>
-                ) : (
+                )}
+
+                {/* Confirmação Final após Pagamento */}
+                {selectedBooking.status === 'waiting_final_confirmation' && !selectedBooking.artist_final_confirmed && (
+                  <>
+                    <ChatButton onClick={() => setChatOpen(!chatOpen)}>
+                      <MessageCircle size={18} />
+                      Mensagem
+                    </ChatButton>
+                    <AcceptButton onClick={() => handleArtistFinalConfirm(selectedBooking.id)}>
+                      <Check size={18} />
+                      Confirmar Realização
+                    </AcceptButton>
+                  </>
+                )}
+
+                {/* Chat apenas para outros status */}
+                {selectedBooking.status !== 'waiting_confirmation' && selectedBooking.status !== 'waiting_final_confirmation' && (
                   <ChatButton onClick={() => setChatOpen(!chatOpen)}>
                     <MessageCircle size={18} />
                     Enviar Mensagem
