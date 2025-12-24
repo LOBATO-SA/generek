@@ -1,5 +1,5 @@
 import './HomePage.css'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { EffectCoverflow, Pagination } from 'swiper/modules'
 import GlobalMusicPlayer from './components/GlobalMusicPlayer'
@@ -7,10 +7,11 @@ import Sidebar from './components/Sidebar'
 import AddToPlaylistModal from './components/AddToPlaylistModal'
 import { useMusicPlayer, defaultSongs } from './contexts/MusicPlayerContext'
 import type { Song } from './contexts/MusicPlayerContext'
+import { songService } from './services/songService'
 import 'swiper/css'
 import 'swiper/css/effect-coverflow'
 import 'swiper/css/pagination'
-import { Heart, ListPlus } from 'lucide-react'
+import { Heart, ListPlus, Loader } from 'lucide-react'
 
 function HomePage() {
   const [activeNav, setActiveNav] = useState('discover')
@@ -18,6 +19,9 @@ function HomePage() {
 
   const [showPlaylistModal, setShowPlaylistModal] = useState(false)
   const [songForPlaylist, setSongForPlaylist] = useState<Song | null>(null)
+
+  const [songs, setSongs] = useState<Song[]>(defaultSongs)
+  const [loadingSongs, setLoadingSongs] = useState(true)
 
   const playlists = [
     { name: "Midnight Moods", image: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/95b52c32-f5da-4fe6-956d-a5ed118bbdd2" },
@@ -27,8 +31,24 @@ function HomePage() {
     { name: "Uplifting Rhythms", image: "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/df461a99-2fb3-4d55-ac16-2e0c6dd783e1" }
   ]
 
-  // Músicas recomendadas (usa as default)
-  const songs = defaultSongs
+  // Fetch songs from API
+  useEffect(() => {
+    const fetchSongs = async () => {
+      setLoadingSongs(true)
+      try {
+        const apiSongs = await songService.getSongs()
+        console.log('🎵 API Songs found:', apiSongs)
+        // Concatenate default songs with API songs
+        setSongs([...defaultSongs, ...apiSongs])
+      } catch (error) {
+        console.error('Error fetching songs:', error)
+        setSongs(defaultSongs) // Fallback on error
+      } finally {
+        setLoadingSongs(false)
+      }
+    }
+    fetchSongs()
+  }, [])
 
   const openPlaylistModal = (song: Song) => {
     setSongForPlaylist(song)
@@ -86,64 +106,71 @@ function HomePage() {
 
         <div className="songs-section">
           <h1>Músicas recomendadas</h1>
-          <div className="songs-grid">
-            {songs.map((song, index) => (
-              <div key={index} className="song-card">
-                <div className="song-card-image">
-                  <img src={song.cover} alt={song.title} />
-                  <div 
-                    className="play-overlay"
-                    onClick={() => playSong(song, songs)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <i className="fa-solid fa-play"></i>
-                  </div>
-                </div>
-                <div className="song-card-info">
-                  <div className="song-card-info-row">
-                    <div className="song-meta">
-                      <h3>{song.title}</h3>
-                      <p>{song.artist}</p>
-                      <span>{song.duration}</span>
+          {loadingSongs ? (
+            <div className="loading-songs">
+              <Loader size={32} className="animate-spin" />
+              <p>Carregando músicas...</p>
+            </div>
+          ) : (
+            <div className="songs-grid">
+              {songs.map((song, index) => (
+                <div key={index} className="song-card">
+                  <div className="song-card-image">
+                    <img src={song.cover} alt={song.title} />
+                    <div
+                      className="play-overlay"
+                      onClick={() => playSong(song, songs)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <i className="fa-solid fa-play"></i>
                     </div>
-                    <button
-                      className="song-like-btn"
-                      onClick={(e) => { 
-                        e.stopPropagation()
-                        toggleLike(song)
-                      }}
-                      title={isLiked(song) ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}
-                    >
-                      <Heart 
-                        size={20} 
-                        color={isLiked(song) ? '#ef4444' : '#fff'} 
-                        fill={isLiked(song) ? '#ef4444' : 'none'}
-                        strokeWidth={2}
-                      />
-                    </button>
-                    <button
-                      className="song-playlist-btn"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openPlaylistModal(song)
-                      }}
-                      title="Adicionar à Playlist"
-                    >
-                      <ListPlus 
-                        size={20} 
-                        color="#fff"
-                        strokeWidth={2}
-                      />
-                    </button>
+                  </div>
+                  <div className="song-card-info">
+                    <div className="song-card-info-row">
+                      <div className="song-meta">
+                        <h3>{song.title}</h3>
+                        <p>{song.artist}</p>
+                        <span>{song.duration}</span>
+                      </div>
+                      <button
+                        className="song-like-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleLike(song)
+                        }}
+                        title={isLiked(song) ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}
+                      >
+                        <Heart
+                          size={20}
+                          color={isLiked(song) ? '#ef4444' : '#fff'}
+                          fill={isLiked(song) ? '#ef4444' : 'none'}
+                          strokeWidth={2}
+                        />
+                      </button>
+                      <button
+                        className="song-playlist-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openPlaylistModal(song)
+                        }}
+                        title="Adicionar à Playlist"
+                      >
+                        <ListPlus
+                          size={20}
+                          color="#fff"
+                          strokeWidth={2}
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
-      <GlobalMusicPlayer 
+      <GlobalMusicPlayer
         onAddToPlaylist={() => openPlaylistModal(getCurrentSong())}
       />
 

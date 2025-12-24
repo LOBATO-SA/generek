@@ -85,3 +85,17 @@ export interface CreateBookingDTO {
   notes?: string
 }
 
+// Song Types from Backend API
+export interface ApiSong {
+  id: string
+  title: string
+  file_url: string
+  cover_url?: string
+  duration?: number // in seconds
+  genre?: string
+  artist_id?: {
+    _id?: string
+    full_name?: string
+  }
+}
+

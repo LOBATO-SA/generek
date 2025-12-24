@@ -50,7 +50,7 @@ Content-Type: application/json
 |-------|------|-----------|-------------|
 | `genres` | `string[]` | Array de gêneros musicais | Não |
 | `location` | `string` | Localização do artista (cidade, estado) | Não |
-| `minPrice` | `number` | Preço mínimo para apresentação (em R$) | Não |
+| `minPrice` | `number` | Preço mínimo para apresentação (em KZ) | Não |
 | `about` | `string` | Texto descritivo sobre o artista | Não |
 | `eventTypes` | `string[]` | Tipos de eventos que o artista aceita | Não |
 

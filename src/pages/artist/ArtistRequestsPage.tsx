@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import type { Booking, BookingStatus } from '../../types'
 import { bookingService } from '../../services/bookingService'
 import styled from 'styled-components'
-import { Check, X, MessageCircle, Calendar, MapPin, DollarSign, User, Clock, Loader } from 'lucide-react'
+import { Check, X, MessageCircle, Calendar, MapPin, DollarSign, User, Clock, Loader, RefreshCw } from 'lucide-react'
 
 function ArtistRequestsPage() {
   const { profile } = useAuth()
@@ -137,8 +137,15 @@ function ArtistRequestsPage() {
 
       <main className="page-content">
         <div className="page-header">
-          <h1>Solicitações</h1>
-          <p>Gerencie as solicitações de contratação</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h1>Solicitações</h1>
+              <p>Gerencie as solicitações de contratação</p>
+            </div>
+            <RefreshButton onClick={fetchBookings} title="Atualizar lista">
+              <RefreshCw size={20} className={loading ? 'spin' : ''} />
+            </RefreshButton>
+          </div>
         </div>
 
         <RequestsContainer>
@@ -661,6 +668,34 @@ const ChatButton = styled(ActionButtonBase)`
 
   &:hover {
     background: rgba(255, 255, 255, 0.1);
+  }
+`
+
+const RefreshButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #fff;
+  }
+
+  svg.spin {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 `
 

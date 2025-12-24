@@ -1,8 +1,9 @@
 import './Page.css'
+import styled from 'styled-components'
 import Sidebar from '../components/Sidebar'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, Clock, MapPin, CheckCircle, XCircle, Plus, Loader, AlertCircle, ThumbsUp, ThumbsDown, DollarSign } from 'lucide-react'
+import { Calendar, Clock, MapPin, CheckCircle, XCircle, Plus, Loader, AlertCircle, ThumbsUp, ThumbsDown, DollarSign, RefreshCw } from 'lucide-react'
 import type { Booking } from '../types'
 import type { BookingStatus } from '../types'
 import { bookingService } from '../services/bookingService'
@@ -118,15 +119,20 @@ function ContractPage() {
       <main className="page-content">
         <div className="page-header">
           <div className="header-content">
-            <div>
-              <h1>{isArtist ? 'Solicitações de Shows' : 'Minhas Contratações'}</h1>
-              <p>{isArtist
-                ? 'Gerencie as solicitações de shows recebidas'
-                : 'Gerencie suas solicitações de contratação de artistas'
-              }</p>
+            <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+              <div style={{ flex: 1 }}>
+                <h1>{isArtist ? 'Solicitações de Shows' : 'Minhas Contratações'}</h1>
+                <p>{isArtist
+                  ? 'Gerencie as solicitações de shows recebidas'
+                  : 'Gerencie suas solicitações de contratação de artistas'
+                }</p>
+              </div>
+              <RefreshButton onClick={fetchBookings} title="Atualizar lista">
+                <RefreshCw size={20} className={loading ? 'spin' : ''} />
+              </RefreshButton>
             </div>
             {!isArtist && (
-              <Link to="/artists" className="new-booking-btn">
+              <Link to="/artists" className="new-booking-btn" style={{ marginLeft: '16px' }}>
                 <Plus size={20} />
                 Nova Contratação
               </Link>
@@ -315,5 +321,35 @@ function ContractPage() {
     </div>
   )
 }
+
+
+const RefreshButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 16px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #fff;
+  }
+
+  svg.spin {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`
 
 export default ContractPage

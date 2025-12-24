@@ -52,11 +52,11 @@ interface ArtistBio {
 function ArtistBioPage() {
   const [activeNav, setActiveNav] = useState('bio')
   useAuth() // Verificar autenticação
-  
+
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  
+
   // Form state
   const [bio, setBio] = useState<ArtistBio>({
     genres: [],
@@ -140,9 +140,9 @@ function ArtistBioPage() {
 
       setMessage({ type: 'success', text: 'Bio atualizada com sucesso!' })
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Erro ao salvar bio' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Erro ao salvar bio'
       })
     } finally {
       setLoading(false)
@@ -152,7 +152,7 @@ function ArtistBioPage() {
   return (
     <div className="page-container">
       <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
-      
+
       <main className="page-content">
         <div className="page-header">
           <h1>Minha Bio</h1>
@@ -166,90 +166,90 @@ function ArtistBioPage() {
               <p>Carregando sua bio...</p>
             </LoadingState>
           ) : (
-          <BioCard>
-            {message && (
-              <Message type={message.type}>{message.text}</Message>
-            )}
+            <BioCard>
+              {message && (
+                <Message type={message.type}>{message.text}</Message>
+              )}
 
-            <Section>
-              <SectionTitle>
-                <Music size={20} />
-                Gêneros Musicais
-              </SectionTitle>
-              <TagGrid>
-                {MUSIC_GENRES.map(genre => (
-                  <Tag 
-                    key={genre}
-                    selected={bio.genres.includes(genre)}
-                    onClick={() => handleGenreToggle(genre)}
-                  >
-                    {genre}
-                  </Tag>
-                ))}
-              </TagGrid>
-            </Section>
+              <Section>
+                <SectionTitle>
+                  <Music size={20} />
+                  Gêneros Musicais
+                </SectionTitle>
+                <TagGrid>
+                  {MUSIC_GENRES.map(genre => (
+                    <Tag
+                      key={genre}
+                      selected={bio.genres.includes(genre)}
+                      onClick={() => handleGenreToggle(genre)}
+                    >
+                      {genre}
+                    </Tag>
+                  ))}
+                </TagGrid>
+              </Section>
 
-            <Section>
-              <SectionTitle>
-                <Calendar size={20} />
-                Tipos de Evento
-              </SectionTitle>
-              <TagGrid>
-                {EVENT_TYPES.map(eventType => (
-                  <Tag 
-                    key={eventType}
-                    selected={bio.eventTypes.includes(eventType)}
-                    onClick={() => handleEventTypeToggle(eventType)}
-                  >
-                    {eventType}
-                  </Tag>
-                ))}
-              </TagGrid>
-            </Section>
+              <Section>
+                <SectionTitle>
+                  <Calendar size={20} />
+                  Tipos de Evento
+                </SectionTitle>
+                <TagGrid>
+                  {EVENT_TYPES.map(eventType => (
+                    <Tag
+                      key={eventType}
+                      selected={bio.eventTypes.includes(eventType)}
+                      onClick={() => handleEventTypeToggle(eventType)}
+                    >
+                      {eventType}
+                    </Tag>
+                  ))}
+                </TagGrid>
+              </Section>
 
-            <Section>
-              <SectionTitle>
-                <MapPin size={20} />
-                Localização
-              </SectionTitle>
-              <Input 
-                type="text"
-                value={bio.location}
-                onChange={(e) => setBio(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Ex: São Paulo, SP"
-              />
-            </Section>
+              <Section>
+                <SectionTitle>
+                  <MapPin size={20} />
+                  Localização
+                </SectionTitle>
+                <Input
+                  type="text"
+                  value={bio.location}
+                  onChange={(e) => setBio(prev => ({ ...prev, location: e.target.value }))}
+                  placeholder="Ex: São Paulo, SP"
+                />
+              </Section>
 
-            <Section>
-              <SectionTitle>
-                <DollarSign size={20} />
-                Preço Inicial (R$)
-              </SectionTitle>
-              <Input 
-                type="number"
-                value={bio.minPrice || ''}
-                onChange={(e) => setBio(prev => ({ ...prev, minPrice: Number(e.target.value) }))}
-                placeholder="Ex: 500"
-                min="0"
-              />
-              <HelpText>Valor mínimo para uma apresentação</HelpText>
-            </Section>
+              <Section>
+                <SectionTitle>
+                  <DollarSign size={20} />
+                  Preço Inicial (KZ)
+                </SectionTitle>
+                <Input
+                  type="number"
+                  value={bio.minPrice || ''}
+                  onChange={(e) => setBio(prev => ({ ...prev, minPrice: Number(e.target.value) }))}
+                  placeholder="Ex: 500"
+                  min="0"
+                />
+                <HelpText>Valor mínimo para uma apresentação</HelpText>
+              </Section>
 
-            <Section>
-              <SectionTitle>Sobre Você</SectionTitle>
-              <TextArea 
-                value={bio.about}
-                onChange={(e) => setBio(prev => ({ ...prev, about: e.target.value }))}
-                placeholder="Conte um pouco sobre sua carreira, experiência, estilo musical..."
-                rows={5}
-              />
-            </Section>
+              <Section>
+                <SectionTitle>Sobre Você</SectionTitle>
+                <TextArea
+                  value={bio.about}
+                  onChange={(e) => setBio(prev => ({ ...prev, about: e.target.value }))}
+                  placeholder="Conte um pouco sobre sua carreira, experiência, estilo musical..."
+                  rows={5}
+                />
+              </Section>
 
-            <SaveButton onClick={handleSave} disabled={loading}>
-              <Save size={18} />
-              {loading ? 'Salvando...' : 'Salvar Bio'}
-            </SaveButton>
-          </BioCard>
+              <SaveButton onClick={handleSave} disabled={loading}>
+                <Save size={18} />
+                {loading ? 'Salvando...' : 'Salvar Bio'}
+              </SaveButton>
+            </BioCard>
           )}
         </BioContainer>
       </main>
