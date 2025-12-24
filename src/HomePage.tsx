@@ -8,9 +8,9 @@ import AddToPlaylistModal from './components/AddToPlaylistModal'
 import { useMusicPlayer, defaultSongs } from './contexts/MusicPlayerContext'
 import type { Song } from './contexts/MusicPlayerContext'
 import { songService } from './services/songService'
-import 'swiper/css'
-import 'swiper/css/effect-coverflow'
-import 'swiper/css/pagination'
+// import 'swiper/css'
+// import 'swiper/css/effect-coverflow'
+// import 'swiper/css/pagination'
 import { Heart, ListPlus, Loader } from 'lucide-react'
 
 function HomePage() {
