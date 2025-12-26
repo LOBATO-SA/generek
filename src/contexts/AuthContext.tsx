@@ -85,14 +85,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Cadastro de usuário
   const signUp = async (
-    email: string, 
-    password: string, 
-    fullName: string, 
+    email: string,
+    password: string,
+    fullName: string,
     userType: UserType
   ): Promise<{ error: AuthError | Error | null }> => {
     try {
       console.log('Enviando para o backend:', { email, password: '***', fullName, userType })
-      
+
       const response = await fetch(`${API_URL}/api/auth/signup`, {
         method: 'POST',
         headers: {
@@ -197,31 +197,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) return { avatarUrl: null, error: new Error('Usuário não autenticado') }
 
     try {
-      const formData = new FormData()
-      formData.append('avatar', imageFile)
+      // Usar Direct-to-Cloud se não for localhost
+      const useDirectUpload = !API_URL.includes('localhost');
 
-      const response = await fetch(`${API_URL}/api/profile/upload-avatar`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-          // NÃO adicionar Content-Type - o browser define automaticamente para FormData
-        },
-        body: formData
-      })
+      if (useDirectUpload) {
+        console.log("🚀 Iniciando flow de upload direto Cloudinary...");
 
-      const data = await response.json()
+        // Passo A: Pegar Assinatura
+        const sigRes = await fetch(`${API_URL}/api/profile/cloudinary-signature`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-      if (!response.ok) {
-        return { avatarUrl: null, error: new Error(data.message || 'Erro ao fazer upload') }
+        const sigData = await sigRes.json();
+        if (!sigRes.ok) {
+          throw new Error(sigData.message || 'Erro ao obter assinatura do Cloudinary');
+        }
+
+        const { signature, timestamp, api_key, cloud_name, folder } = sigData;
+
+        // Passo B: Upload Direto para Cloudinary
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        formData.append("api_key", api_key);
+        formData.append("timestamp", timestamp);
+        formData.append("signature", signature);
+        formData.append("folder", folder);
+
+        const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!cloudRes.ok) {
+          throw new Error('Erro no upload direto para o Cloudinary');
+        }
+
+        const { secure_url } = await cloudRes.json();
+        console.log("✅ Avatar subido para Cloudinary:", secure_url);
+
+        // Passo C: Salvar URL no Perfil
+        const updateResult = await updateProfile({ avatar_url: secure_url });
+
+        if (updateResult.error) {
+          throw updateResult.error;
+        }
+
+        return { avatarUrl: secure_url, error: null };
+
+      } else {
+        // Modo tradicional para desenvolvimento local
+        const formData = new FormData()
+        formData.append('avatar', imageFile)
+
+        const response = await fetch(`${API_URL}/api/profile/upload-avatar`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+            // NÃO adicionar Content-Type - o browser define automaticamente para FormData
+          },
+          body: formData
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          return { avatarUrl: null, error: new Error(data.message || 'Erro ao fazer upload') }
+        }
+
+        // Atualizar estado local com o novo perfil
+        if (data.profile) {
+          setProfile(data.profile)
+        }
+
+        return { avatarUrl: data.profile?.avatar_url || null, error: null }
       }
-
-      // Atualizar estado local com o novo perfil
-      if (data.profile) {
-        setProfile(data.profile)
-      }
-
-      return { avatarUrl: data.profile?.avatar_url || null, error: null }
     } catch (error) {
+      console.error('Erro no upload de avatar:', error);
       return { avatarUrl: null, error: error as Error }
     }
   }
