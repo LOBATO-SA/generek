@@ -124,6 +124,21 @@ function ArtistProfilePage() {
     )
   }
 
+
+  // Check if profile is complete enough for hiring
+  const isProfileComplete = artist &&
+    (artist.hourly_rate !== null && artist.hourly_rate !== undefined && artist.hourly_rate > 0) &&
+    (artist.bio || artist.about);
+
+  const formatCurrency = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return '0';
+    return value.toLocaleString('pt-BR');
+  };
+
+  const getInfoFallback = (value: string | null | undefined) => {
+    return value && value.trim() ? value : 'Sem informação';
+  };
+
   return (
     <div className="page-container">
       <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
@@ -139,7 +154,7 @@ function ArtistProfilePage() {
           {/* Artist Header */}
           <div className="artist-profile-header">
             <div className="artist-avatar-large">
-              <img src={artist.avatar_url} alt={artist.name} />
+              <img src={artist.avatar_url || "https://github.com/ecemgo/mini-samples-great-tricks/assets/13468728/37e5ccfa-f9ee-458b-afa2-dcd85b495e4e"} alt={artist.name} />
               {artist.verified && (
                 <div className="verified-badge-large">
                   <CheckCircle size={32} />
@@ -149,34 +164,41 @@ function ArtistProfilePage() {
 
             <div className="artist-main-info">
               <h1>{artist.name}</h1>
-              <p className="artist-genre">{artist.genre}</p>
+              <p className="artist-genre">{getInfoFallback(artist.genre)}</p>
 
               <div className="artist-stats">
                 <div className="stat">
                   <Star size={18} fill="currentColor" />
-                  <span>{artist.rating} ({artist.total_bookings} avaliações)</span>
+                  <span>{artist.rating || 0} ({artist.total_bookings || 0} avaliações)</span>
                 </div>
                 <div className="stat">
                   <MapPin size={18} />
-                  <span>{artist.location}</span>
+                  <span>{getInfoFallback(artist.location)}</span>
                 </div>
                 <div className="stat">
                   <DollarSign size={18} />
-                  <span>KZ {artist.hourly_rate.toLocaleString('pt-BR')}/hora</span>
+                  <span>KZ {formatCurrency(artist.hourly_rate)}/hora</span>
                 </div>
               </div>
 
-              <Link to={`/booking?artist=${artist.id}`} className="hire-button">
-                <Calendar size={20} />
-                Contratar Artista
-              </Link>
+              {isProfileComplete ? (
+                <Link to={`/booking?artist=${artist.id}`} className="hire-button">
+                  <Calendar size={20} />
+                  Contratar Artista
+                </Link>
+              ) : (
+                <button className="hire-button disabled" title="Perfil incompleto para contratação" disabled>
+                  <Calendar size={20} />
+                  Contratar Artista (Perfil Incompleto)
+                </button>
+              )}
             </div>
           </div>
 
           {/* About Section */}
           <div className="section-card">
             <h2>Sobre</h2>
-            <p>{artist.about || artist.bio}</p>
+            <p>{artist.about || artist.bio || 'Sem informação disponível sobre o artista.'}</p>
           </div>
 
           {/* Popular Songs */}
@@ -224,7 +246,7 @@ function ArtistProfilePage() {
             <div className="pricing-info">
               <div className="pricing-item">
                 <span className="pricing-label">Valor por hora:</span>
-                <span className="pricing-value">KZ {artist.hourly_rate.toLocaleString('pt-BR')}</span>
+                <span className="pricing-value">KZ {formatCurrency(artist.hourly_rate)}</span>
               </div>
               <div className="pricing-item">
                 <span className="pricing-label">Duração mínima:</span>
@@ -235,9 +257,15 @@ function ArtistProfilePage() {
                 <span className="pricing-value">24-48 horas</span>
               </div>
             </div>
-            <Link to={`/booking?artist=${artist.id}`} className="hire-button-secondary">
-              Solicitar Contratação
-            </Link>
+            {isProfileComplete ? (
+              <Link to={`/booking?artist=${artist.id}`} className="hire-button-secondary">
+                Solicitar Contratação
+              </Link>
+            ) : (
+              <button className="hire-button-secondary disabled" disabled>
+                Perfil Incompleto
+              </button>
+            )}
           </div>
         </div>
 
@@ -250,14 +278,14 @@ function ArtistProfilePage() {
               <span className="price-label">A partir de</span>
               <div className="price-value">
                 <span className="price-currency">KZ</span>
-                <span className="price-amount">{artist.hourly_rate.toLocaleString('pt-BR')}</span>
+                <span className="price-amount">{formatCurrency(artist.hourly_rate)}</span>
               </div>
               <span className="price-unit">por hora</span>
             </div>
 
             <div className="sidebar-divider"></div>
 
-            {artist.available_events && (
+            {artist.available_events && artist.available_events.length > 0 && (
               <div className="sidebar-section">
                 <h4>Eventos Disponíveis</h4>
                 <div className="tags-list">
@@ -270,7 +298,7 @@ function ArtistProfilePage() {
 
             <div className="sidebar-section">
               <h4><MapPin size={18} /> Localização</h4>
-              <p>{artist.location}</p>
+              <p>{getInfoFallback(artist.location)}</p>
             </div>
 
             {artist.experience && (
@@ -280,10 +308,17 @@ function ArtistProfilePage() {
               </div>
             )}
 
-            <Link to={`/booking?artist=${artist.id}`} className="sidebar-hire-button">
-              <Calendar size={20} />
-              Solicitar Contratação
-            </Link>
+            {isProfileComplete ? (
+              <Link to={`/booking?artist=${artist.id}`} className="sidebar-hire-button">
+                <Calendar size={20} />
+                Solicitar Contratação
+              </Link>
+            ) : (
+              <button className="sidebar-hire-button disabled" disabled>
+                <Calendar size={20} />
+                Solicitar Contratação
+              </button>
+            )}
 
             {(artist.social_media?.instagram || artist.social_media?.facebook) && (
               <>

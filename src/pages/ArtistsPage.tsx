@@ -192,20 +192,20 @@ function ArtistsPage() {
                     <div className="artist-top">
                       <div>
                         <h3>{artist.name}</h3>
-                        <span className="genre-tag">{artist.genre}</span>
+                        <span className="genre-tag">{artist.genre || 'Sem informação'}</span>
                       </div>
                       <div className="rating">
                         <Star size={16} fill="currentColor" />
-                        <span>{artist.rating}</span>
+                        <span>{artist.rating || 0}</span>
                       </div>
                     </div>
 
-                    <p className="bio">{artist.bio}</p>
+                    <p className="bio">{artist.bio || artist.about || 'Sem informação'}</p>
 
                     <div className="artist-meta">
                       <div className="meta-item">
                         <MapPin size={14} />
-                        <span>{artist.location}</span>
+                        <span>{artist.location || 'Sem informação'}</span>
                       </div>
                       <div className="meta-item">
                         <Users size={14} />
@@ -216,11 +216,11 @@ function ArtistsPage() {
                     <div className="artist-footer">
                       <div className="price">
                         <span className="currency">Kz</span>
-                        <span>{(artist.hourly_rate || 0).toLocaleString('pt-AO')}</span>
+                        <span>{(artist.hourly_rate || 0).toLocaleString('pt-BR')}</span>
                         <span className="per-hour">/h</span>
                       </div>
                       <div className="bookings">
-                        {artist.total_bookings} contratações
+                        {artist.total_bookings || 0} contratações
                       </div>
                     </div>
                   </div>
