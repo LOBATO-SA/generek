@@ -7,8 +7,14 @@ import { useMusicPlayer } from '../../contexts/MusicPlayerContext'
 import type { Song } from '../../contexts/MusicPlayerContext'
 import styled from 'styled-components'
 import { Upload, Music, Trash2, Play, Pause, X, Loader, RefreshCw } from 'lucide-react'
+import { UploadManager } from "@bytescale/sdk";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const BYTESCALE_API_KEY = import.meta.env.VITE_BYTESCALE_API_KEY || 'public_W23MTVQ2dXiWg8NHVHD2hmwZyr7P'
+
+const uploadManager = new UploadManager({
+  apiKey: BYTESCALE_API_KEY
+});
 
 interface MusicTrack {
   _id: string
@@ -63,7 +69,7 @@ function ArtistMusicPage() {
   const { user, profile } = useAuth()
   const { playSong, isPlaying, songs, currentSongIndex, togglePlay } = useMusicPlayer()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [tracks, setTracks] = useState<MusicTrack[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -71,16 +77,16 @@ function ArtistMusicPage() {
   const [showTerms, setShowTerms] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
-  
+
   // Estado do formulário de upload
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [songTitle, setSongTitle] = useState('')
   const [songGenre, setSongGenre] = useState('')
-  
+
   // Estado para guardar dados de uploads com erro para retry
   const [pendingUploads, setPendingUploads] = useState<Map<string, { file: File, title: string, genre: string }>>(new Map())
-  
+
   // Estado para modal de confirmação de delete
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [trackToDelete, setTrackToDelete] = useState<MusicTrack | null>(null)
@@ -186,34 +192,65 @@ function ArtistMusicPage() {
 
     try {
       const token = localStorage.getItem('token')
-      const formData = new FormData()
-      formData.append('song', selectedFile)
-      formData.append('title', songTitle.trim())
-      formData.append('genre', songGenre)
+      let data;
 
-      const response = await fetch(`${API_URL}/api/songs/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      })
+      // Usar Direct-to-Cloud se não for localhost (para burlar limites da Vercel)
+      const useDirectUpload = !API_URL.includes('localhost');
 
-      const data = await response.json()
+      if (useDirectUpload) {
+        console.log("🚀 Fazendo upload direto para Bytescale...");
+        const { fileUrl, filePath } = await uploadManager.upload({
+          data: selectedFile,
+          originalFileName: selectedFile.name,
+          mime: selectedFile.type
+        });
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Erro ao fazer upload')
+        console.log("✅ Upload concluído. Registrando no backend...");
+        const response = await fetch(`${API_URL}/api/songs/register`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: songTitle.trim(),
+            genre: songGenre,
+            file_url: fileUrl,
+            file_path: filePath
+          })
+        });
+
+        data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Erro ao registrar música');
+
+      } else {
+        // Modo tradicional para desenvolvimento local
+        const formData = new FormData()
+        formData.append('song', selectedFile)
+        formData.append('title', songTitle.trim())
+        formData.append('genre', songGenre)
+
+        const response = await fetch(`${API_URL}/api/songs/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        })
+
+        data = await response.json()
+        if (!response.ok) throw new Error(data.message || 'Erro ao fazer upload');
       }
 
       // Atualizar a lista de tracks
-      setTracks(prev => prev.map(t => 
-        t._id === tempId 
+      setTracks(prev => prev.map(t =>
+        t._id === tempId
           ? { ...data.song, status: 'uploaded' as const }
           : t
       ))
-      
+
       setMessage({ type: 'success', text: 'Música enviada com sucesso!' })
-      
+
       // Limpar formulário
       setSelectedFile(null)
       setSongTitle('')
@@ -221,7 +258,7 @@ function ArtistMusicPage() {
 
     } catch (error) {
       console.error('Erro no upload:', error)
-      setTracks(prev => prev.map(t => 
+      setTracks(prev => prev.map(t =>
         t._id === tempId ? { ...t, status: 'error' as const } : t
       ))
       // Guardar dados para retry
@@ -230,9 +267,9 @@ function ArtistMusicPage() {
         title: songTitle.trim(),
         genre: songGenre
       }))
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Erro ao enviar música' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Erro ao enviar música'
       })
     }
 
@@ -245,7 +282,7 @@ function ArtistMusicPage() {
   const handleAcceptTerms = async () => {
     setTermsAccepted(true)
     setShowTerms(false)
-    
+
     if (pendingFile) {
       // Mostrar formulário de upload
       setSelectedFile(pendingFile)
@@ -263,7 +300,7 @@ function ArtistMusicPage() {
 
   const confirmDeleteTrack = async () => {
     if (!trackToDelete) return
-    
+
     setDeleting(true)
 
     try {
@@ -285,9 +322,9 @@ function ArtistMusicPage() {
         throw new Error(data.message || 'Erro ao remover música')
       }
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Erro ao remover música' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Erro ao remover música'
       })
     } finally {
       setDeleting(false)
@@ -312,56 +349,86 @@ function ArtistMusicPage() {
     const { file, title, genre } = uploadData
 
     // Atualizar status para uploading
-    setTracks(prev => prev.map(t => 
+    setTracks(prev => prev.map(t =>
       t._id === trackId ? { ...t, status: 'uploading' as const } : t
     ))
     setMessage(null)
 
     try {
       const token = localStorage.getItem('token')
-      const formData = new FormData()
-      formData.append('song', file)
-      formData.append('title', title)
-      formData.append('genre', genre)
+      let data;
 
-      const response = await fetch(`${API_URL}/api/songs/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      })
+      // Usar Direct-to-Cloud se não for localhost
+      const useDirectUpload = !API_URL.includes('localhost');
 
-      const data = await response.json()
+      if (useDirectUpload) {
+        console.log("🚀 Tentando novamente upload direto para Bytescale...");
+        const { fileUrl, filePath } = await uploadManager.upload({
+          data: file,
+          originalFileName: file.name,
+          mime: file.type
+        });
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Erro ao fazer upload')
+        const response = await fetch(`${API_URL}/api/songs/register`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: title,
+            genre: genre,
+            file_url: fileUrl,
+            file_path: filePath
+          })
+        });
+
+        data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Erro ao registrar música');
+
+      } else {
+        // Modo tradicional para desenvolvimento local
+        const formData = new FormData()
+        formData.append('song', file)
+        formData.append('title', title)
+        formData.append('genre', genre)
+
+        const response = await fetch(`${API_URL}/api/songs/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        })
+
+        data = await response.json()
+        if (!response.ok) throw new Error(data.message || 'Erro ao fazer upload')
       }
 
       // Atualizar a lista de tracks com sucesso
-      setTracks(prev => prev.map(t => 
-        t._id === trackId 
+      setTracks(prev => prev.map(t =>
+        t._id === trackId
           ? { ...data.song, status: 'uploaded' as const }
           : t
       ))
-      
+
       // Remover dos pendentes
       setPendingUploads(prev => {
         const newMap = new Map(prev)
         newMap.delete(trackId)
         return newMap
       })
-      
+
       setMessage({ type: 'success', text: 'Música enviada com sucesso!' })
 
     } catch (error) {
       console.error('Erro no retry:', error)
-      setTracks(prev => prev.map(t => 
+      setTracks(prev => prev.map(t =>
         t._id === trackId ? { ...t, status: 'error' as const } : t
       ))
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Erro ao enviar música' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Erro ao enviar música'
       })
     }
   }
@@ -394,10 +461,10 @@ function ArtistMusicPage() {
     const playlist = tracks
       .filter(t => t.file_url && t.status !== 'uploading' && t.status !== 'error')
       .map(t => trackToSong(t, artistName))
-    
+
     // Encontrar a música clicada na playlist
     const song = trackToSong(track, artistName)
-    
+
     // Tocar a música no player global
     playSong(song, playlist)
   }
@@ -405,7 +472,7 @@ function ArtistMusicPage() {
   return (
     <div className="page-container">
       <Sidebar activeNav={activeNav} onNavChange={setActiveNav} />
-      
+
       <main className="page-content">
         <div className="page-header">
           <h1>Minhas Músicas</h1>
@@ -437,7 +504,7 @@ function ArtistMusicPage() {
                   </>
                 )}
               </UploadButton>
-              <HiddenInput 
+              <HiddenInput
                 ref={fileInputRef}
                 type="file"
                 accept="audio/*,.mp3,.wav,.ogg,.m4a"
@@ -455,12 +522,12 @@ function ArtistMusicPage() {
               <>
                 <TrackList>
                   {tracks.map(track => (
-                    <TrackItem 
-                      key={track._id} 
+                    <TrackItem
+                      key={track._id}
                       $isError={track.status === 'error'}
                       $isPlaying={isTrackPlaying(track)}
                     >
-                      <PlayButton 
+                      <PlayButton
                         onClick={() => handlePlayTrack(track)}
                         disabled={!track.file_url || track.status === 'uploading'}
                         $isPlaying={isTrackPlaying(track)}
@@ -492,7 +559,7 @@ function ArtistMusicPage() {
                       </TrackInfo>
                       <TrackActions>
                         {track.status === 'error' && (
-                          <RetryButton 
+                          <RetryButton
                             onClick={() => handleRetryUpload(track._id)}
                             title="Tentar novamente"
                           >
@@ -500,8 +567,8 @@ function ArtistMusicPage() {
                             Tentar novamente
                           </RetryButton>
                         )}
-                        <ActionButton 
-                          $danger 
+                        <ActionButton
+                          $danger
                           onClick={() => track.status === 'error' ? handleRemoveFailedTrack(track._id) : handleDeleteTrack(track)}
                           disabled={track.status === 'uploading'}
                           title={track.status === 'error' ? 'Remover' : 'Excluir música'}
@@ -576,7 +643,7 @@ function ArtistMusicPage() {
                 }}>
                   Cancelar
                 </CancelButton>
-                <AcceptButton 
+                <AcceptButton
                   onClick={handleSubmitUpload}
                   disabled={!songTitle.trim() || !songGenre}
                 >
