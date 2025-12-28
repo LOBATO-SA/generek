@@ -3,10 +3,12 @@ import styled from 'styled-components'
 import Sidebar from '../components/Sidebar'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, Clock, MapPin, CheckCircle, XCircle, Plus, Loader, AlertCircle, ThumbsUp, ThumbsDown, DollarSign, RefreshCw } from 'lucide-react'
+import { Calendar, Clock, MapPin, CheckCircle, XCircle, Plus, Loader, AlertCircle, ThumbsUp, ThumbsDown, DollarSign, RefreshCw, Download } from 'lucide-react'
+import PaymentModal from '../components/PaymentModal'
 import type { Booking } from '../types'
 import type { BookingStatus } from '../types'
 import { bookingService } from '../services/bookingService'
+import { pdfService } from '../services/pdfService'
 import { useAuth } from '../contexts/AuthContext'
 
 function ContractPage() {
@@ -18,6 +20,10 @@ function ContractPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+
+  // Payment Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [currentBooking, setCurrentBooking] = useState<{ id: string, price: number } | null>(null)
 
   const statusOptions: { label: string; value: 'all' | BookingStatus }[] = [
     { label: 'Todas', value: 'all' },
@@ -94,9 +100,19 @@ function ContractPage() {
   }
 
   // Listener Actions
-  const handlePay = (id: string) => handleAction(() => bookingService.payBooking(id), id)
+  const handlePayClick = (id: string, price: number) => {
+    setCurrentBooking({ id, price })
+    setShowPaymentModal(true)
+  }
+
+  const handlePaySuccess = async () => {
+    if (!currentBooking) return
+    await handleAction(() => bookingService.payBooking(currentBooking.id), currentBooking.id)
+  }
+
   const handleFinalConfirm = (id: string) => handleAction(() => bookingService.confirmFinal(id), id)
   const handleCancel = (id: string) => handleAction(() => bookingService.cancelBooking(id), id)
+  const handleDownloadContract = (booking: Booking) => pdfService.generateContractPDF(booking)
 
   // Artist Actions
   const handleArtistAccept = (id: string) => handleAction(() => bookingService.acceptBooking(id), id)
@@ -277,7 +293,7 @@ function ContractPage() {
                         {booking.status === 'waiting_payment' && (
                           <>
                             {!isArtist && !booking.payment_done && (
-                              <button className="action-btn confirm" onClick={() => handlePay(booking.id)} disabled={!!actionLoading} title="Pagar">
+                              <button className="action-btn confirm" onClick={() => handlePayClick(booking.id, booking.total_price || 0)} disabled={!!actionLoading} title="Pagar">
                                 <DollarSign size={18} />
                               </button>
                             )}
@@ -305,6 +321,17 @@ function ContractPage() {
                           </>
                         )}
 
+                        {/* 4. Completed */}
+                        {booking.status === 'completed' && (
+                          <DownloadButton
+                            onClick={() => handleDownloadContract(booking)}
+                            title="Baixar Contrato PDF"
+                          >
+                            <Download size={18} />
+                            <span>Contrato</span>
+                          </DownloadButton>
+                        )}
+
                       </div>
                     </div>
 
@@ -318,6 +345,15 @@ function ContractPage() {
           )}
         </div>
       </main>
+
+      {currentBooking && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={handlePaySuccess}
+          totalPrice={currentBooking.price}
+        />
+      )}
     </div>
   )
 }
@@ -349,6 +385,37 @@ const RefreshButton = styled.button`
   @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+  }
+`
+
+const DownloadButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: 44px;
+  background: #1db954;
+  color: #000;
+  border: none;
+  border-radius: 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.3);
+
+  &:hover {
+    background: #1ed760;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(29, 185, 84, 0.4);
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  span {
+    white-space: nowrap;
   }
 `
 

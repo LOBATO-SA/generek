@@ -5,8 +5,9 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import type { Booking, BookingStatus } from '../../types'
 import { bookingService } from '../../services/bookingService'
+import { pdfService } from '../../services/pdfService'
 import styled from 'styled-components'
-import { Check, X, MessageCircle, Calendar, MapPin, DollarSign, User, Clock, Loader, RefreshCw } from 'lucide-react'
+import { Check, X, MessageCircle, Calendar, MapPin, DollarSign, User, Clock, Loader, RefreshCw, Download } from 'lucide-react'
 
 function ArtistRequestsPage() {
   const { } = useAuth()
@@ -86,6 +87,8 @@ function ArtistRequestsPage() {
       setMessage({ type: 'error', text: 'Erro ao confirmar finalização.' })
     }
   }
+
+  const handleDownloadContract = (booking: Booking) => pdfService.generateContractPDF(booking)
 
   const handleSendMessage = () => {
     if (!chatMessage.trim()) return
@@ -324,10 +327,18 @@ function ArtistRequestsPage() {
 
                 {/* Chat apenas para outros status */}
                 {selectedBooking.status !== 'waiting_confirmation' && selectedBooking.status !== 'waiting_final_confirmation' && (
-                  <ChatButton onClick={() => setChatOpen(!chatOpen)}>
-                    <MessageCircle size={18} />
-                    Enviar Mensagem
-                  </ChatButton>
+                  <>
+                    {selectedBooking.status === 'completed' && (
+                      <DownloadButton onClick={() => handleDownloadContract(selectedBooking)}>
+                        <Download size={18} />
+                        Contrato
+                      </DownloadButton>
+                    )}
+                    <ChatButton onClick={() => setChatOpen(!chatOpen)}>
+                      <MessageCircle size={18} />
+                      Enviar Mensagem
+                    </ChatButton>
+                  </>
                 )}
               </ModalActions>
             </Modal>
@@ -668,6 +679,19 @@ const ChatButton = styled(ActionButtonBase)`
 
   &:hover {
     background: rgba(255, 255, 255, 0.1);
+  }
+`
+
+const DownloadButton = styled(ActionButtonBase)`
+  background: #1db954;
+  color: #000;
+  border: none;
+  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.3);
+
+  &:hover {
+    background: #1ed760;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(29, 185, 84, 0.4);
   }
 `
 

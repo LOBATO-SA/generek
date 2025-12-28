@@ -97,9 +97,8 @@ function App() {
         <div className="header-content">
           <h1 className="logo">Generek</h1>
           <nav className="nav">
-            <a href="#home">Início</a>
-            <a href="#artists">Artistas</a>
-            <a href="#contact">Contato</a>
+            <a onClick={() => navigate('/auth')} className="nav-link">Entrar</a>
+            <a onClick={() => navigate('/auth')} className="nav-link">Cadastrar</a>
           </nav>
         </div>
       </header>
